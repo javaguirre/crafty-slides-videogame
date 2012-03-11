@@ -474,6 +474,48 @@ CustomControls: function(speed) {
         </pre>
       </article>
       <article>
+        <h4>Controles III</h4>
+        <p>Unimos animaciones con su control</p>
+        <pre>
+//usamos las animaciones definidas anteriormente(walk_left, walk_right)
+//con enterframe conprobamos en cada paso hacia dónde se mueve el jugador
+.bind("enterframe", function(e) {
+    if (this.__move.left) {
+      if (!this.isPlaying("walk_left"))
+        this.stop().animate("walk_left", 10);
+    }
+    if (this.__move.right) {
+      if (!this.isPlaying("walk_right"))
+        this.stop().animate("walk_right", 10);
+    }
+    ...
+  }).bind("keyup", function(e) {
+    this.stop();
+  });
+        </pre>
+      </article>
+      <article>
+        <h4>Colisiones</h4>
+        <p>Interacción entre dos elementos del juego</p>
+        <pre>
+//como hemos añadido collision al elemento jugador
+//podemos usar sus métodos
+//cuando choque con algo, paramos el movimiento
+//wall_left, wall_right, paredes definidas con el
+//componente solid, no podemos atraversarlas ¡COLISIÓN!
+.onhit("wall_left", function() {
+  this.x += this._speed;
+  this.stop();
+}).onhit("wall_right", function() {
+  this.x -= this._speed;
+  this.stop();
+}).onhit("wall_bottom", function() {
+  this.y -= this._speed;
+  this.stop();
+});
+        </pre>
+      </article>
+      <article>
         <h3>
             Referencias
         </h3>
