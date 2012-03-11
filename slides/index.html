@@ -132,7 +132,8 @@ var CANVAS_WIDTH = 480;
 var CANVAS_HEIGHT = 320;
 
 var canvasElement = $("&lt;canvas width='" + CANVAS_WIDTH +
-                      "' height='" + CANVAS_HEIGHT + "'&gt;&lt;/canvas&gt;");
+                      "' height='" + CANVAS_HEIGHT
+                      + "'&gt;&lt;/canvas&gt;");
 var canvas = canvasElement.get(0).getContext("2d");
 canvasElement.appendTo('body');
         </pre>
@@ -477,8 +478,8 @@ CustomControls: function(speed) {
         <h4>Controles III</h4>
         <p>Unimos animaciones con su control</p>
         <pre>
-//usamos las animaciones definidas anteriormente(walk_left, walk_right)
-//con enterframe conprobamos en cada paso hacia dónde se mueve el jugador
+//usamos las animaciones definidas anteriormente
+//con enterframe conprobamos hacia dónde se mueve
 .bind("enterframe", function(e) {
     if (this.__move.left) {
       if (!this.isPlaying("walk_left"))
@@ -548,7 +549,7 @@ this.bind("mouseover", function () {
       </article>
       <article>
         <h4>Ejemplo de eventos de ratón</h4>
-        <iframe src="http://craftyjs.com/demos/connect4/" style="width: 500px; height: 500px;">
+        <iframe src="http://craftyjs.com/demos/connect4/" style="width: 700px; height: 600px;">
         </iframe>
       </article>
       <article>
