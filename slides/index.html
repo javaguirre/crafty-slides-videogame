@@ -495,6 +495,11 @@ CustomControls: function(speed) {
         </pre>
       </article>
       <article>
+        <h4>Ejemplo final de controles</h4>
+        <iframe src="http://craftyjs.com/demos/tutorial/" style="width: 500px; height: 500px;">
+        </iframe>
+      </article>
+      <article>
         <h4>Colisiones</h4>
         <p>Interacción entre dos elementos del juego</p>
         <pre>
@@ -514,6 +519,54 @@ CustomControls: function(speed) {
   this.stop();
 });
         </pre>
+      </article>
+      <article>
+        <h4>Ejemplo de Colisiones</h4>
+        <iframe src="http://craftyjs.com/demos/fruitassassin/" style="width: 500px; height: 500px;">
+        </iframe>
+      </article>
+      <article>
+        <h4>Ratón</h4>
+        <pre>
+//capturamos el evento mouseover
+//dentro de un jugador
+this.bind("mouseover", function () {
+    this.sprite(index, 1);
+    this.hit = true;
+    score += (index + 1) * 10;
+    scoreEnt.text("Score: " + score);
+  Crafty.e("2D, DOM, " + fruit).attr({
+    z: 0,
+    x: this._x,
+    y: this._y,
+    alpha: 0.2
+//cuando el ratón pasa por encima cambiamos el sprite que se muestra
+  }).sprite(index, 2);
+  this.unbind("mouseover");
+});
+        </pre>
+      </article>
+      <article>
+        <h4>Ejemplo de eventos de ratón</h4>
+        <iframe src="http://craftyjs.com/demos/connect4/" style="width: 500px; height: 500px;">
+        </iframe>
+      </article>
+      <article>
+        <h4>Audio</h4>
+        <pre>
+//Añadimos a Crafty el componente
+//conel nombre theme
+Crafty.audio.add("theme", "track02.ogg");
+//Lo lanzamos en nuestra escena
+Crafty.audio.play("theme");
+//Lo paramos cuando queramos
+Crafty.audio.mute();
+        </pre>
+      </article>
+      <article>
+        <h4>Más - Físicas de juego, almacenamiento...</h4>
+        <iframe src="http://craftyjs.com/demos/asteroids/" style="width: 500px; height: 500px;">
+        </iframe>
       </article>
       <article>
         <h3>
