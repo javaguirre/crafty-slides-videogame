@@ -94,6 +94,48 @@
         </ul>
       </article>
       <article>
+        <h4>Componentes - Bibliotecas</h4>
+        <ul>
+            <li>Posición (2D, 3D)</li>
+            <li>Renderizado (Canvas, DOM, Drawing)</li>
+            <li>Control (Colisiones, Ratón, Teclado)</li>
+            <li>Sonido</li>
+            <li>Animación (Sprite, Animation)</li>
+            <li>Más (Text, Math, Time, Storage...)</li>
+        </ul>
+      </article>
+      <article>
+        <h4>Crafty - Inicio</h4>
+        <p>Iniciamos un canvas en el que pintaremos el juego</p>
+        <pre>
+const WIDTH = 800;
+const HEIGHT = 600;
+
+Crafty.init(WIDTH, HEIGHT);
+Crafty.canvas.init();
+        </pre>
+      </article>
+      <article>
+        <h4>Creamos una escena</h4>
+        <pre>
+Crafty.scene("loading", function() {
+    //Cargamos un actor, sprite.png en la escena "loading"
+    Crafty.load(["sprite.png"], function () {
+        //cuando todo esté cargado, lanzamos la escena principal
+        Crafty.scene("main");
+    });
+
+    //Ponemos un fondo negro
+    Crafty.background("#000");
+    //Colocamos un texto en el centro de la pantalla
+    //Con Crafty.e llamamos a una entidad
+    Crafty.e("2D, DOM, Text").attr({w: WIDTH/2, h: HEIGHT/2,
+                                    x: 100, y: 100})
+        .text("Loading").css({"text-align": "center"});
+});
+        </pre>
+      </article>
+      <article>
       	<h3>Licencia</h3>
       	<p>
       	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">
