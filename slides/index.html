@@ -136,6 +136,132 @@ Crafty.scene("loading", function() {
         </pre>
       </article>
       <article>
+        <h4>Lanzar una escena</h4>
+        <p>Tan sencillo como ...</p>
+        <pre>
+//Ejecutamos esta llamada con el nombre
+//Que le hemos puesto a la escena
+Crafty.scene("loading");
+//Ejecuta la función definida en la anterior
+//diapositiva
+        </pre>
+      </article>
+      <article>
+        <h4>Inicialización de sprites</h4>
+        <pre>
+// "Cortamos" el sprite.png donde tenemos
+// todos los recursos del juego, en trozos de 16x16 pixeles
+Crafty.sprite(16, "sprite.png", {
+    grass1: [0, 0],
+    grass2: [1, 0],
+    grass3: [2, 0],
+    grass4: [3, 0],
+    flower: [0, 1],
+    bush1:  [0, 2],
+    bush2:  [1, 2],
+    player: [0, 3]
+});
+//Ahora podremos introducirlos en otros componentes
+//con los nombres que les hemos puesto (grass1, player)
+        </pre>
+      </article>
+      <article>
+        <h4>Escena principal</h4>
+        <pre>
+function generateWorld()
+{
+    //Usamos nuestros sprites anteriores para crear la escena
+    //rellenando todos los pixeles de la pantalla
+    for (var i = 0; i < 25; i++) {
+      //Generamos la hierba,
+      //será del tipo (grass1, grass2, grass3, grass4)
+      //aleatoriamente
+      for (var j = 0; j < 20; j++) {
+        grassType = Crafty.randRange(1, 4);
+        //Añadimos los componentes a nuestra entidad "pintora"
+        Crafty.e("2D, canvas, grass" + grassType)
+          .attr({x: i * 16, y: j * 16});
+        }
+}
+        </pre>
+      </article>
+      <article>
+        <h4>Escena principal II</h4>
+        <p>Ya podemos llamar a generateWorld
+           para pintar la escena en la pantalla
+        </p>
+        <pre>
+Crafty.scene("main", function()
+{
+    generateWorld();
+});
+        </pre>
+      </article>
+      <article>
+        <h4>El jugador, actor principal</h4>
+        <p>El jugador será una entidad con
+           con componentes que lo hagan interactivo
+           (Controles, Animación, Colisiones, Posición 2D)
+        </p>
+        <pre>
+var player = Crafty.e("2D, DOM, player, controls, animate,
+                      collision")
+.attr({x: 160, y: 144, z: 1})
+//animate: nombre de animación, posteriormente
+// posición del sprite inicial, y final
+// para hacer la sensación de que el jugador anda
+// Son coordenadas en sprite.png
+.animate("walk_left", 6, 3, 8)
+.animate("walk_right", 9, 3, 11)
+.animate("walk_up", 3, 3, 5)
+.animate("walk_down", 0, 3, 2);
+        </pre>
+      </article>
+      <article>
+        <h4>Controles</h4>
+        <p>
+            Creamos un componente Crafty.c,
+            que controla el control del jugador
+        </p>
+        <pre>
+Crafty.c('CustomControls', {
+__move: {left: false, right: false, up: false, down: false},
+_speed: 3,
+
+CustomControls: function(speed) {
+  if (speed) this._speed = speed;
+  var move = this.__move;
+  ...
+
+  return this;
+}
+
+        </pre>
+      </article>
+      <article>
+        <h4>Controles II</h4>
+        <pre>
+  this.bind('enterframe', function() {
+    //Movemos al jugador en función de boolelanos que controlan
+    //dirección
+    if (move.right) this.x += this._speed;
+    else if (move.left) this.x -= this._speed;
+    else if (move.up) this.y -= this._speed;
+    else if (move.down) this.y += this._speed;
+  }).bind('keydown', function(e) {
+    move.right = move.left = move.down = move.up = false;
+    if (e.keyCode === Crafty.keys.RA) move.right = true;
+    if (e.keyCode === Crafty.keys.LA) move.left = true;
+    ...
+  }).bind('keyup', function(e) {
+    // If key is released, stop moving
+    if (e.keyCode === Crafty.keys.RA) move.right = false;
+    if (e.keyCode === Crafty.keys.LA) move.left = false;
+    ...
+  });
+        </pre>
+      </article>
+      <article>
       	<h3>Licencia</h3>
       	<p>
       	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">
