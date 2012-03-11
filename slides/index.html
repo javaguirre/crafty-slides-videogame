@@ -56,6 +56,17 @@
       </article>
 
       <article>
+      	<h3>Licencia</h3>
+      	<p>
+      	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">
+      	<img alt="Licencia de Creative Commons" style="border-width:0" src="http://i.creativecommons.org/l/by-sa/3.0/88x31.png" /></a>
+      	<br />Este <span xmlns:dct="http://purl.org/dc/terms/" href="http://purl.org/dc/dcmitype/InteractiveResource" rel="dct:type">
+      	obra</span> está bajo una <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">
+      	licencia de Creative Commons Reconocimiento-CompartirIgual 3.0 Unported</a>.
+      	</p>
+      </article>
+
+      <article>
         <h4>Historia - Teoría</h4>
         <h5>Por jerarquías</h5>
         <p>
@@ -71,18 +82,21 @@
             <a href="http://cowboyprogramming.com/2007/01/05/evolve-your-heirachy/">Entidades del juego por componentes</a>
         </div>
       </article>
+
       <article>
         <h4>Historia - ejemplos</h4>
         <h5>Por jerarquías</h5>
         <img src="../images/gregory_class_hierarchy.png"/>
       </article>
+
       <article>
         <h4>Historia - ejemplos</h4>
         <h5>Orientado a componentes</h5>
         <img src="../images/Fig-2.gif" style="width: 500px;" />
       </article>
+
       <article>
-        <h4>Usaremos Crafty</h4>
+        <h4>Crafty: Características</h4>
         <ul>
             <li>Orientado a componentes</li>
             <li>Web</li>
@@ -93,6 +107,7 @@
             <li>En intenso desarrollo</li>
         </ul>
       </article>
+
       <article>
         <h4>Componentes - Bibliotecas</h4>
         <ul>
@@ -104,6 +119,203 @@
             <li>Más (Text, Math, Time, Storage...)</li>
         </ul>
       </article>
+      <article>
+        <h3>Estructura</h3>
+        <ol>
+          <li>Introducción: motores de juegos</li>
+          <li>Motores de juegos JS</li>
+          <li>Crafty</li>
+          <li>Características de Crafty: detección colisiones, sprites, etc.</li>
+          <li>Modelos de Crafty: entidades/componentes</li>
+          <li>El escenario</li>
+          <li>El juego</li>
+          <li>Referencias</li>
+        </ol>
+      </article>
+
+      <article>
+        <h3>Motor de juegos</h3>
+        <p>Componente básicos de un motor de juegos en JavaScript</p>
+        <ul>
+          <li>El canvas</li>
+          <li>El bucle de juego (game loop)</li>
+          <li>Personajes y objetos</li>
+          <li>Sprites</li>
+          <li>Controles</li>
+          <li>Detección de colisiones</li>
+          <li>Sonido</li>
+          <li>Otras funciones</li>
+        </ul>
+        <div class="source">Fuente: <a href="http://www.html5rocks.com/en/tutorials/canvas/notearsgame/">No tears guide to HTML5 games</a></div>
+      </article>
+
+      <article>
+        <h3>El canvas</h3>
+        <pre>
+var CANVAS_WIDTH = 480;
+var CANVAS_HEIGHT = 320;
+
+var canvasElement = $("&lt;canvas width='" + CANVAS_WIDTH +
+                      "' height='" + CANVAS_HEIGHT + "'&gt;&lt;/canvas&gt;");
+var canvas = canvasElement.get(0).getContext("2d");
+canvasElement.appendTo('body');
+        </pre>
+        <div class="source">Fuente: <a href="http://www.html5rocks.com/en/tutorials/canvas/notearsgame/">No tears guide to HTML5 games</a></div>
+      </article>
+
+      <article>
+        <h3>El bucle de juego</h3>
+        <pre>
+var FPS = 30;
+setInterval(function() {
+  update();
+  draw();
+}, 1000/FPS);
+
+function update() {
+  textX += 1;
+  textY += 1;
+}
+
+function draw() {
+  canvas.fillStyle = "#000";
+  canvas.fillText("Sup Bro!", textX, textY);
+}
+        </pre>
+        <div class="source">Fuente: <a href="http://www.html5rocks.com/en/tutorials/canvas/notearsgame/">No tears guide to HTML5 games</a></div>
+      </article>
+
+      <article>
+        <h3>Personajes y objetos</h3>
+        <pre>
+var player = {
+  color: "#00A",
+  x: 220,
+  y: 270,
+  width: 32,
+  height: 32,
+  draw: function() {
+    canvas.fillStyle = this.color;
+    canvas.fillRect(this.x, this.y, this.width, this.height);
+  }
+};
+        </pre>
+        <div class="source">Fuente: <a href="http://www.html5rocks.com/en/tutorials/canvas/notearsgame/">No tears guide to HTML5 games</a></div>
+      </article>
+
+      <article>
+        <h3>Sprites</h3>
+        <p>
+          <img src="images/sprite.png" width="100%" style="background:white;" />
+        </p>
+
+        <pre>
+player.sprite = Sprite("player");
+
+player.draw = function() {
+  this.sprite.draw(canvas, this.x, this.y);
+};
+        </pre>
+        <div class="source">Fuente: <a href="http://www.html5rocks.com/en/tutorials/canvas/notearsgame/">No tears guide to HTML5 games</a></div>
+      </article>
+
+      <article>
+        <h3>Controles</h3>
+        <pre>
+$(document).bind("keydown", "left", function() { ... });
+
+function update() {
+  if (keydown.left) {
+    player.x -= 2;
+  }
+
+  if (keydown.right) {
+    player.x += 2;
+  }
+}
+        </pre>
+        <div class="source">Fuente: <a href="http://www.html5rocks.com/en/tutorials/canvas/notearsgame/">No tears guide to HTML5 games</a></div>
+      </article>
+
+      <article>
+        <h3>Detección de colisiones</h3>
+        <p>Entre personajes, objetos y límites del juego.</p>
+        <pre>
+function handleCollisions() {
+  playerBullets.forEach(function(bullet) {
+    enemies.forEach(function(enemy) {
+      if (collides(bullet, enemy)) {
+        enemy.explode();
+        bullet.active = false;
+      }
+    });
+  });
+  enemies.forEach(function(enemy) {
+    if (collides(enemy, player)) {
+      enemy.explode();
+      player.explode();
+    }
+  });
+}
+        </pre>
+        <div class="source">Fuente: <a href="http://www.html5rocks.com/en/tutorials/canvas/notearsgame/">No tears guide to HTML5 games</a></div>
+      </article>
+
+      <article>
+        <h3>Sonido</h3>
+        <pre>
+player.shoot = function() {
+  Sound.play("shoot");
+  ...
+}
+
+function Enemy(I) {
+  ...
+
+  I.explode = function() {
+    Sound.play("explode");
+    ...
+  }
+}
+        </pre>
+        <div class="source">Fuente: <a href="http://www.html5rocks.com/en/tutorials/canvas/notearsgame/">No tears guide to HTML5 games</a></div>
+      </article>
+
+      <article>
+        <h3>Otras funciones</h3>
+        <ul>
+          <li>Escenario: composición del escenario donde se desarrolla el juego</li>
+          <li>Físicas: gravedad, velocidad, rozamiento, etc.</li>
+          <li>Control de escenas (estado de juego): cambio de escenas/fases, guardar partida, etc.</li>
+          <li>Efectos 2D/3D, como parallax scrolling (Ejemplo: <a href="http://www.nikebetterworld.com/product">Nike Better World</a>)</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>Ejemplos de motores JS (open source)</h3>
+        <ul>
+          <li>RPG JS: <a href="http://rpgjs.com/">http://rpgjs.com/</a></li>
+          <li>LimeJS: <a href="http://www.limejs.com/">http://www.limejs.com/</a></li>
+          <li>Game query (jQuery plugin): <a href="http://gamequeryjs.com/">http://gamequeryjs.com/</a></li>
+          <li>Game JS: <a href="http://gamejs.org/">http://gamejs.org/</a></li>
+          <li>Crafty: <a href="http://craftyjs.com/">http://craftyjs.com/</a></li>
+        </ul>
+        <p>Otros motores de juesgos JavaScript (hype!?): <a href="https://gist.github.com/768272">listado</a></p>
+        <p>Tabla de comparación de características entre motores: <a href="https://github.com/bebraw/jswiki/wiki/Game-engine-feature-matrix">tabla</a></p>
+      </article>
+
+      <article>
+        <h3>Crafty</h3>
+        <ul>
+          <li>Motor de juegos en JavaScript</li>
+          <li>Open source: <a href="https://github.com/craftyjs/Crafty">Crafty en github</a></li>
+          <li>Basado en el modelo de entidades/componentes</li>
+          <li>Nos facilita la creación de juegos en JS, ofrece un API para desarrollo: <a href="http://craftyjs.com/api/">API de Crafty</a></li>
+          <li>Comunidad muy activa alrededor: <a href="https://groups.google.com/forum/#!forum/craftyjs">Google Group</a></li>
+          <p><img src="images/crafty_logo.png"></p>
+        </ul>
+      </article>
+
       <article>
         <h4>Crafty - Inicio</h4>
         <p>Iniciamos un canvas en el que pintaremos el juego</p>
@@ -261,25 +473,30 @@ CustomControls: function(speed) {
   });
         </pre>
       </article>
-      <article>
-      	<h3>Licencia</h3>
-      	<p>
-      	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">
-      	<img alt="Licencia de Creative Commons" style="border-width:0" src="http://i.creativecommons.org/l/by-sa/3.0/88x31.png" /></a>
-      	<br />Este <span xmlns:dct="http://purl.org/dc/terms/" href="http://purl.org/dc/dcmitype/InteractiveResource" rel="dct:type">
-      	obra</span> está bajo una <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">
-      	licencia de Creative Commons Reconocimiento-CompartirIgual 3.0 Unported</a>.
-      	</p>
+    <article>
+        <h3>Crafty</h3>
+        <ul>
+          <li>Qué es, dónde está, qué podemos hacer con él</li>
+          <li>Características de Crafty: detección colisiones, sprites, etc.</li>
+          <li>Modelos de Crafty: entidades/componentes</li>
+          <li>El escenario</li>
+          <li>El juego</li>
+          <li></li>
+        </ul>
       </article>
-
 
       <article>
         <h3>
             Referencias
         </h3>
         <ul>
-            <li><a href="http://craftyjs.com/">Crafty website</a></li>
-            <li><a href="http://dailyjs.com/2011/02/11/crafty/">Crafty tutorial</a></li>
+          <li><a href="http://www.html5rocks.com/en/tutorials/canvas/notearsgame/">No tears guide to HTML5 games</a></li>
+          <li><a href="http://michalbe.blogspot.com/2010/09/simple-game-with-html5-canvas-part-1.html">HTML5 canvas game tutorial</a></li>
+          <li><a href="http://coding.smashingmagazine.com/2011/07/12/behind-the-scenes-of-nike-better-world/">Parallax scrolling guide</a></li>
+          <li><a href="http://craftyjs.com/">Crafty website</a></li>
+          <li><a href="https://github.com/craftyjs/Crafty">Crafty en github</a></li>
+          <li><a href="https://github.com/starmelt/craftyjstut/wiki">Crafty tutoriales</a></li>
+          <li><a href="http://craftyjs.github.com/tutorial/bananabomber/create-a-game">Crafty Tutorial RPG</a></li>
         </ul>
         <br />
         <p>Presentación hecha con <a href="http://code.google.com/p/html5slides/">plantilla HTML5 de la gente de Google</a></p>
@@ -292,8 +509,8 @@ CustomControls: function(speed) {
 		<br />
 		<br />
         <ul>
-          <li><a href="http://twitter.com/javaguirre">Javier Aguirre</a></li>
-          <li>Israel Gutiérrez</li>
+          <li>Javier Aguirre (<a href="https://twitter.com/#!/javaguirre">@javaguirre</a>)</li>
+          <li>Israel Gutiérrez (<a href="https://twitter.com/#!/gootyfer">@gootyfer</a>)</li>
         </ul>
       </article>
 
