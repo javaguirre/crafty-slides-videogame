@@ -67,13 +67,13 @@
       </article>
 
       <article>
-        <h4>Historia - Teoría de juegos</h4>
-        <h5>Por jerarquías</h5>
+        <h3>Historia - Teoría de juegos</h3>
+        <h4>Por jerarquías</h4>
         <p>
             Tenemos un árbol de clases y cada una hereda de la anterior
             dando lugar a un árbol de herencias que añaden funcionalidades
         </p>
-        <h5>Orientado a componentes</h5>
+        <h4>Orientado a componentes</h4>
         <p>
             Conjunto de entidades, a las que les añadimos
             funcionalidades añadiéndoles componentes
@@ -84,15 +84,15 @@
       </article>
 
       <article>
-        <h4>Historia - ejemplos</h4>
-        <h5>Por jerarquías</h5>
-        <img src="../images/gregory_class_hierarchy.png"/>
+        <h3>Historia - ejemplos</h3>
+        <h4>Por jerarquías</h4>
+        <img src="images/gregory_class_hierarchy.png"/>
       </article>
 
       <article>
-        <h4>Historia - ejemplos</h4>
-        <h5>Orientado a componentes</h5>
-        <img src="../images/Fig-2.gif" style="width: 500px;" />
+        <h3>Historia - ejemplos</h3>
+        <h4>Orientado a componentes</h4>
+        <img src="images/Fig-2.gif" style="width: 500px;" />
       </article>
 
       <article>
@@ -294,7 +294,7 @@ function Enemy(I) {
       </article>
 
       <article>
-        <h4>Crafty: Características</h4>
+        <h3>Crafty - Características</h3>
         <ul>
             <li>Orientado a componentes</li>
             <li>Web</li>
@@ -307,7 +307,7 @@ function Enemy(I) {
       </article>
 
       <article>
-        <h4>Componentes - Bibliotecas</h4>
+        <h3>Componentes - Bibliotecas</h3>
         <ul>
             <li>Posición (2D, 3D)</li>
             <li>Renderizado (Canvas, DOM, Drawing)</li>
@@ -317,19 +317,21 @@ function Enemy(I) {
             <li>Más (Text, Math, Time, Storage...)</li>
         </ul>
       </article>
+
       <article>
-        <h4>Crafty - Inicio</h4>
+        <h3>Crafty - Inicio</h3>
         <p>Iniciamos un canvas en el que pintaremos el juego</p>
         <pre>
-const WIDTH = 800;
-const HEIGHT = 600;
+var WIDTH = 800;
+var HEIGHT = 600;
 
 Crafty.init(WIDTH, HEIGHT);
 Crafty.canvas.init();
         </pre>
       </article>
+
       <article>
-        <h4>Creamos una escena</h4>
+        <h3>Creamos una escena</h3>
         <pre>
 Crafty.scene("loading", function() {
     //Cargamos un actor, sprite.png en la escena "loading"
@@ -348,8 +350,9 @@ Crafty.scene("loading", function() {
 });
         </pre>
       </article>
+
       <article>
-        <h4>Lanzar una escena</h4>
+        <h3>Lanzar una escena</h3>
         <p>Tan sencillo como ...</p>
         <pre>
 //Ejecutamos esta llamada con el nombre
@@ -359,8 +362,9 @@ Crafty.scene("loading");
 //diapositiva
         </pre>
       </article>
+
       <article>
-        <h4>Inicialización de sprites</h4>
+        <h3>Inicialización de sprites</h3>
         <pre>
 // "Cortamos" el sprite.png donde tenemos
 // todos los recursos del juego, en trozos de 16x16 pixeles
@@ -378,40 +382,42 @@ Crafty.sprite(16, "sprite.png", {
 //con los nombres que les hemos puesto (grass1, player)
         </pre>
       </article>
+
       <article>
-        <h4>Escena principal</h4>
+        <h3>Escena principal</h3>
         <pre>
-function generateWorld()
-{
+function generateWorld(){
     //Usamos nuestros sprites anteriores para crear la escena
     //rellenando todos los pixeles de la pantalla
-    for (var i = 0; i < 25; i++) {
+    for (var i = 0; i &lt; 25; i++) {
       //Generamos la hierba,
       //será del tipo (grass1, grass2, grass3, grass4)
       //aleatoriamente
-      for (var j = 0; j < 20; j++) {
+      for (var j = 0; j &lt; 20; j++) {
         grassType = Crafty.randRange(1, 4);
         //Añadimos los componentes a nuestra entidad "pintora"
         Crafty.e("2D, canvas, grass" + grassType)
           .attr({x: i * 16, y: j * 16});
-        }
+      }
+    }
 }
         </pre>
       </article>
+
       <article>
-        <h4>Escena principal II</h4>
+        <h3>Escena principal II</h3>
         <p>Ya podemos llamar a generateWorld
            para pintar la escena en la pantalla
         </p>
         <pre>
-Crafty.scene("main", function()
-{
+Crafty.scene("main", function(){
     generateWorld();
 });
         </pre>
       </article>
+
       <article>
-        <h4>El jugador, actor principal</h4>
+        <h3>El jugador, actor principal</h3>
         <p>El jugador será una entidad con
            con componentes que lo hagan interactivo
            (Controles, Animación, Colisiones, Posición 2D)
@@ -430,8 +436,9 @@ var player = Crafty.e("2D, DOM, player, controls, animate,
 .animate("walk_down", 0, 3, 2);
         </pre>
       </article>
+
       <article>
-        <h4>Controles</h4>
+        <h3>Controles</h3>
         <p>
             Creamos un componente Crafty.c,
             que controla el control del jugador
@@ -448,11 +455,11 @@ CustomControls: function(speed) {
 
   return this;
 }
-
         </pre>
       </article>
+
       <article>
-        <h4>Controles II</h4>
+        <h3>Controles II</h3>
         <pre>
   this.bind('enterframe', function() {
     //Movemos al jugador en función de boolelanos que controlan
@@ -474,8 +481,9 @@ CustomControls: function(speed) {
   });
         </pre>
       </article>
+
       <article>
-        <h4>Controles III</h4>
+        <h3>Controles III</h3>
         <p>Unimos animaciones con su control</p>
         <pre>
 //usamos las animaciones definidas anteriormente
@@ -495,13 +503,15 @@ CustomControls: function(speed) {
   });
         </pre>
       </article>
+
       <article>
-        <h4>Ejemplo final de controles</h4>
+        <h3>Ejemplo final de controles</h3>
         <iframe src="http://craftyjs.com/demos/tutorial/" style="width: 500px; height: 500px;">
         </iframe>
       </article>
+
       <article>
-        <h4>Colisiones</h4>
+        <h3>Colisiones</h3>
         <p>Interacción entre dos elementos del juego</p>
         <pre>
 //como hemos añadido collision al elemento jugador
@@ -521,13 +531,15 @@ CustomControls: function(speed) {
 });
         </pre>
       </article>
+
       <article>
-        <h4>Ejemplo de Colisiones</h4>
+        <h3>Ejemplo de Colisiones</h3>
         <iframe src="http://craftyjs.com/demos/fruitassassin/" style="width: 500px; height: 500px;">
         </iframe>
       </article>
+
       <article>
-        <h4>Ratón</h4>
+        <h3>Ratón</h3>
         <pre>
 //capturamos el evento mouseover
 //dentro de un jugador
@@ -547,16 +559,18 @@ this.bind("mouseover", function () {
 });
         </pre>
       </article>
+
       <article>
-        <h4>Ejemplo de eventos de ratón</h4>
+        <h3>Ejemplo de eventos de ratón</h3>
         <iframe src="http://craftyjs.com/demos/connect4/" style="width: 700px; height: 600px;">
         </iframe>
       </article>
+
       <article>
-        <h4>Audio</h4>
+        <h3>Audio</h3>
         <pre>
 //Añadimos a Crafty el componente
-//conel nombre theme
+//con el nombre theme
 Crafty.audio.add("theme", "track02.ogg");
 //Lo lanzamos en nuestra escena
 Crafty.audio.play("theme");
@@ -564,11 +578,13 @@ Crafty.audio.play("theme");
 Crafty.audio.mute();
         </pre>
       </article>
+
       <article>
-        <h4>Más - Físicas de juego, almacenamiento...</h4>
+        <h3>Más - Físicas de juego, almacenamiento...</h3>
         <iframe src="http://craftyjs.com/demos/asteroids/" style="width: 500px; height: 500px;">
         </iframe>
       </article>
+
       <article>
         <h3>
             Referencias
