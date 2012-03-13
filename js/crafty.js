@@ -1,5 +1,5 @@
 /*!
-* Crafty v0.4.5
+* Crafty v0.4.6
 * http://craftyjs.com
 *
 * Copyright 2010, Louis Stowasser
@@ -169,6 +169,8 @@
 	* string with a list of component names or passing multiple
 	* arguments with the component names.
 	*
+	* If the component has a function named `init` it will be called.
+	*
 	* @example
 	* ~~~
 	* this.addComponent("2D, Canvas");
@@ -215,7 +217,53 @@
 			this.trigger("NewComponent", ul);
 			return this;
 		},
-
+  /**@
+            * @comp Crafty Core
+            * @sign public this. toggleComponent(String componentID,String componentToggle)
+            * @param componentID - Component ID to add or remove.
+            * @param componentToggle - Component ID to replace instead of remove
+            * Add or Remove Components
+            * @example
+            * ~~~
+            * var e = Crafty.e("2D,DOM,Test");
+            * e.toggleComponent("Test,Test2"); //Remove Test add Test2 and vice versa
+            * ~~~
+            */
+           toggleComponent:function(toggle){
+            var i = 0, l, comps;
+            if (arguments.length > 1) {
+                l = arguments.length;
+                        
+                for (; i < l; i++) {
+                    if(this.has(arguments[i])){ 
+                        this.removeComponent(arguments[i]);
+                    }else{
+                        this.addComponent(arguments[i]);
+                    }
+                }
+            //split components if contains comma
+            } else if (toggle.indexOf(',') !== -1) {
+                comps = toggle.split(rlist);
+                l = comps.length;
+                for (; i < l; i++) {
+                    if(this.has(comps[i])){ 
+                        this.removeComponent(comps[i]);
+                    }else{
+                        this.addComponent(comps[i]);
+                    }
+                }
+                
+            //single component passed
+            } else {
+                if(this.has(toggle)){ 
+                    this.removeComponent(toggle);
+                }else{
+                    this.addComponent(toggle);
+                }
+            }
+   
+            return this;
+        },
 		/**@
 	* #.requires
 	* @comp Crafty Core
@@ -245,7 +293,8 @@
 	* @sign public this .removeComponent(String Component[, soft])
 	* @param component - Component to remove
 	* @param soft - Whether to soft remove it (defaults to `true`)
-	* Removes a component from an entity. A soft remove will only
+	*
+	* Removes a component from an entity. A soft remove (the default) will only
 	* refrain `.has()` from returning true. Hard will remove all
 	* associated properties and methods.
 	*/
@@ -329,9 +378,9 @@
 		},
 
 		/**@
-	* #.delay
+	* #.timeout
 	* @comp Crafty Core
-	* @sign public this .delay(Function callback, Number delay)
+	* @sign public this .timeout(Function callback, Number delay)
 	* @param callback - Method to execute after given amount of milliseconds
 	* @param delay - Amount of milliseconds to execute the method
 	* The delay method will execute a function after a given amount of time in milliseconds.
@@ -341,16 +390,16 @@
 	* @example
     * Destroy itself after 100 milliseconds
 	* ~~~
-	* this.delay(function() {
+	* this.timeout(function() {
 	     this.destroy();
 	* }, 100);
 	* ~~~
 	*/
-		delay: function (fn, duration) {
+		timeout: function (callback, duration) {
 			this.each(function () {
 				var self = this;
 				setTimeout(function () {
-					fn.call(self);
+					callback.call(self);
 				}, duration);
 			});
 			return this;
@@ -386,14 +435,14 @@
 	* ~~~
 	* @see .trigger, .unbind
 	*/
-		bind: function (event, fn) {
+		bind: function (event, callback) {
 			//optimization for 1 entity
 			if (this.length === 1) {
 				if (!handlers[event]) handlers[event] = {};
 				var h = handlers[event];
 
 				if (!h[this[0]]) h[this[0]] = []; //init handler array for entity
-				h[this[0]].push(fn); //add current fn
+				h[this[0]].push(callback); //add current callback
 				return this;
 			}
 
@@ -403,7 +452,7 @@
 				var h = handlers[event];
 
 				if (!h[this[0]]) h[this[0]] = []; //init handler array for entity
-				h[this[0]].push(fn); //add current fn
+				h[this[0]].push(callback); //add current callback
 			});
 			return this;
 		},
@@ -421,7 +470,7 @@
 	* unbind only that callback.
 	* @see .bind, .trigger
 	*/
-		unbind: function (event, fn) {
+		unbind: function (event, callback) {
 			this.each(function () {
 				var hdl = handlers[event], i = 0, l, current;
 				//if no events, cancel
@@ -429,14 +478,14 @@
 				else return this;
 
 				//if no function, delete all
-				if (!fn) {
+				if (!callback) {
 					delete hdl[this[0]];
 					return this;
 				}
 				//look for a match if the function is passed
 				for (; i < l; i++) {
 					current = hdl[this[0]];
-					if (current[i] == fn) {
+					if (current[i] == callback) {
 						current.splice(i, 1);
 						i--;
 					}
@@ -464,9 +513,9 @@
 			if (this.length === 1) {
 				//find the handlers assigned to the event and entity
 				if (handlers[event] && handlers[event][this[0]]) {
-					var fns = handlers[event][this[0]], i = 0, l = fns.length;
+					var callbacks = handlers[event][this[0]], i = 0, l = callbacks.length;
 					for (; i < l; i++) {
-						fns[i].call(this, data);
+						callbacks[i].call(this, data);
 					}
 				}
 				return this;
@@ -475,9 +524,9 @@
 			this.each(function () {
 				//find the handlers assigned to the event and entity
 				if (handlers[event] && handlers[event][this[0]]) {
-					var fns = handlers[event][this[0]], i = 0, l = fns.length;
+					var callbacks = handlers[event][this[0]], i = 0, l = callbacks.length;
 					for (; i < l; i++) {
-						fns[i].call(this, data);
+						callbacks[i].call(this, data);
 					}
 				}
 			});
@@ -503,12 +552,12 @@
 	* });
 	* ~~~
 	*/
-		each: function (fn) {
+		each: function (func) {
 			var i = 0, l = this.length;
 			for (; i < l; i++) {
 				//skip if not exists
 				if (!entities[this[i]]) continue;
-				fn.call(entities[this[i]], i);
+				func.call(entities[this[i]], i);
 			}
 			return this;
 		},
@@ -551,19 +600,19 @@
 	* *Note: Support in IE<9 is slightly different. The method will be executed
 	* after the property has been set*
 	*/
-		setter: function (prop, fn) {
+		setter: function (prop, callback) {
 			if (Crafty.support.setter) {
-				this.__defineSetter__(prop, fn);
+				this.__defineSetter__(prop, callback);
 			} else if (Crafty.support.defineProperty) {
 				Object.defineProperty(this, prop, {
-					set: fn,
+					set: callback,
 					configurable: true
 				});
 			} else {
 				noSetter.push({
 					prop: prop,
 					obj: this,
-					fn: fn
+					fn: callback
 				});
 			}
 			return this;
@@ -622,6 +671,8 @@
 	* @sign public this Crafty.init([Number width, Number height])
 	* @param width - Width of the stage
 	* @param height - Height of the stage
+	* Create a div with id `cr-stage`, if there is not already an HTMLElement with id `cr-stage` (by `Crafty.viewport.init`).
+	*
 	* Starts the `EnterFrame` interval. This will call the `EnterFrame` event for every frame.
 	*
 	* Can pass width and height values for the stage otherwise will default to window size (see `Crafty.DOM.window`).
@@ -630,6 +681,7 @@
 	*
 	* Uses `requestAnimationFrame` to sync the drawing with the browser but will default to `setInterval` if the browser does not support it.
 	* @see Crafty.stop
+	* @see Crafty.viewport.init <!-- This link is broken. Document generation engine needs to be fixed. Although a reference to Crafty.viewport could be used, it is better use a more specific reference to EnterFrame. -->
 	*/
 		init: function (w, h) {
 			Crafty.viewport.init(w, h);
@@ -690,6 +742,19 @@
 				Crafty.timer.init();
 			}
 			return this;
+		},
+
+		/**@
+		 * #Crafty.isPaused
+		 * @category Core
+		 * @sign public this Crafty.isPaused()
+		 * Check whether the game is already paused or not.
+		 * ~~~
+		 * Crafty.isPaused();
+		 * ~~~
+		 */
+		isPaused: function () {
+			return this._paused;
 		},
 		/**@
 	* #Crafty.timer
@@ -826,12 +891,15 @@
 	* Creates a component where the first argument is the ID and the second
 	* is the object that will be inherited by entities.
 	*
-	* There is a convention for writing components. Properties or
-	* methods that start with an underscore are considered private.
-	* A method called `init` will automatically be called as soon as the
+	* There is a convention for writing components. 
+	*
+	* - Properties or methods that start with an underscore are considered private.
+	* - A method called `init` will automatically be called as soon as the
 	* component is added to an entity.
-	* A method with the same name as the component is considered to be a constructor
-	* and is generally used when data is needed before executing.
+	* - A methid called `uninit` will be called when the component is removed from an entity. 
+	* A sample use case for this is the native DOM component that removes its div element wehen removed from an entity.
+	* - A method with the same name as the component is considered to be a constructor
+	* and is generally used when you need to pass configuration data to the component on a per entity basis.
 	*
 	* ~~~
 	* Crafty.c("Annoying", {
@@ -846,8 +914,8 @@
 	* ~~~
 	* @see Crafty.e
 	*/
-		c: function (id, fn) {
-			components[id] = fn;
+		c: function (compName, component) {
+			components[compName] = component;
 		},
 
 		/**@
@@ -1025,9 +1093,13 @@
 		return id;
 	}
 
-	/**
-* Clone an Object
-*/
+	/**@
+	* #Crafty.clone
+	* @category Core
+	* @sign public Object .clone(Object obj)
+	* @param obj - an object
+  * Deep copy (a.k.a clone) of an object.
+	*/
 	function clone(obj) {
 		if (obj === null || typeof(obj) != 'object')
 			return obj;
@@ -1056,7 +1128,8 @@
 
 	//make Crafty global
 	window.Crafty = Crafty;
-})(window); //wrap around components
+})(window);
+ //wrap around components
 (function(Crafty, window, document) {
  /**
 * Spatial HashMap for broad phase collision
@@ -1065,6 +1138,15 @@
 */
 (function (parent) {
 
+
+	/**@
+	* #Crafty.HashMap.constructor
+	* @comp Crafty.HashMap
+	* @sign public void Crafty.HashMap([cellsize])
+	* @param cellsize - the cell size. If omitted, `cellsize` is 64.
+  * Set `cellsize`.
+  * And create `this.map`.
+	*/
 	var cellsize,
 	HashMap = function (cell) {
 		cellsize = cell || 64;
@@ -1073,6 +1155,17 @@
 	SPACE = " ";
 
 	HashMap.prototype = {
+	/**@
+	* #Crafty.map.insert
+	* @comp Crafty.map
+  * @sign public Object Crafty.map.insert(Object obj)
+	* @param obj - An entity to be inserted.
+  * `obj` is instered in '.map' of the corresponding broad phase cells. An object of the following fields is returned.
+  *
+  * - the object that keep track of cells (keys)
+  * - `obj`
+  * - the HashMap object
+	*/
 		insert: function (obj) {
 			var keys = HashMap.key(obj),
 			entry = new Entry(keys, obj, this),
@@ -1093,6 +1186,16 @@
 			return entry;
 		},
 
+	/**@
+	* #Crafty.map.search
+	* @comp Crafty.map
+  * @sign public Object Crafty.map.search(Object rect[, Boolean filter])
+	* @param rect - the rectangular region to search for entities.
+	* @param filter - Default value is true. Otherwise, must be false.
+  * - If `filter` is `false`, just search for all the entries in the give `rect` region by broad phase collision. Entity may be returned duplicated.
+  * - If `filter` is `true`, filter the above results by checking that they actually overlap `rect`.
+  * The easier usage is with `filter`=`true`. For performance reason, you may use `filter`=`false`, and filter the result youself. See examples in drawing.js and collision.js
+	*/
 		search: function (rect, filter) {
 			var keys = HashMap.key(rect),
 			i, j,
@@ -1136,6 +1239,18 @@
 			}
 		},
 
+	/**@
+	* #Crafty.map.remove
+	* @comp Crafty.map
+	* @sign public void Crafty.map.remove([Object keys, ]Object obj)
+	* @param keys - key region. If omitted, it will be derived from obj by `Crafty.HashMap.key`.
+	* @param obj - need more document.
+	* Remove an entity in a broad phase map.
+	* - The second form is only used in Crafty.HashMap to save time for computing keys again, where keys were computed previously from obj. End users should not call this form directly.
+	* ~~~
+	* Crafty.map.remove(e);
+	* ~~~
+	*/
 		remove: function (keys, obj) {
 			var i = 0, j, hash;
 
@@ -1151,15 +1266,34 @@
 					hash = i + SPACE + j;
 
 					if (this.map[hash]) {
-						var cell = this.map[hash], m = 0, n = cell.length;
+						var cell = this.map[hash],
+						m,
+						n = cell.length;
 						//loop over objs in cell and delete
-						for (; m < n; m++) if (cell[m] && cell[m][0] === obj[0])
+						for (m = 0; m < n; m++)
+							if (cell[m] && cell[m][0] === obj[0])
 								cell.splice(m, 1);
 					}
 				}
 			}
 		},
 
+	/**@
+	* #Crafty.map.boundaries
+	* @comp Crafty.map
+	* @sign public Object Crafty.map.boundaries()
+  * The return `Object` is of the following format.
+	* {
+  *   min: {
+  *     x: val_x,
+  *     y: val_y
+  *   },
+  *   max: {
+  *     x: val_x,
+  *     y: val_y
+  *   }
+  * }
+	*/
 		boundaries: function () {
 			var k, ent,
 			hash = {
@@ -1171,12 +1305,16 @@
 				min: { x: Infinity, y: Infinity }
 			};
 
+      //Using broad phase hash to speed up the computation of boundaries.
 			for (var h in this.map) {
 				if (!this.map[h].length) continue;
 
-				var coord = h.split(SPACE);
-				if (coord[0] >= hash.max.x) {
-					hash.max.x = coord[0];
+        //broad phase coordinate
+				var map_coord = h.split(SPACE),
+					i=map_coord[0],
+					j=map_coord[0];
+				if (i >= hash.max.x) {
+					hash.max.x = i;
 					for (k in this.map[h]) {
 						ent = this.map[h][k];
 						//make sure that this is a Crafty entity
@@ -1185,8 +1323,8 @@
 						}
 					}
 				}
-				if (coord[0] <= hash.min.x) {
-					hash.min.x = coord[0];
+				if (i <= hash.min.x) {
+					hash.min.x = i;
 					for (k in this.map[h]) {
 						ent = this.map[h][k];
 						if (typeof ent == 'object' && 'requires' in ent) {
@@ -1194,8 +1332,8 @@
 						}
 					}
 				}
-				if (coord[1] >= hash.max.y) {
-					hash.max.y = coord[1];
+				if (j >= hash.max.y) {
+					hash.max.y = j;
 					for (k in this.map[h]) {
 						ent = this.map[h][k];
 						if (typeof ent == 'object' && 'requires' in ent) {
@@ -1203,8 +1341,8 @@
 						}
 					}
 				}
-				if (coord[1] <= hash.min.y) {
-					hash.min.y = coord[1];
+				if (j <= hash.min.y) {
+					hash.min.y = j;
 					for (k in this.map[h]) {
 						ent = this.map[h][k];
 						if (typeof ent == 'object' && 'requires' in ent) {
@@ -1218,6 +1356,25 @@
 		}
 	};
 
+/**@
+* #Crafty.HashMap
+* @category 2D
+* Broad-phase collision detection engine. See background information at 
+*
+* - [N Tutorial B - Broad-Phase Collision](http://www.metanetsoftware.com/technique/tutorialB.html)
+* - [Broad-Phase Collision Detection with CUDA](http.developer.nvidia.com/GPUGems3/gpugems3_ch32.html)
+* @see Crafty.map
+*/
+
+	/**@
+	* #Crafty.HashMap.key
+	* @comp Crafty.HashMap
+	* @sign public Object Crafty.HashMap.key(Object obj)
+	* @param obj - an Object that has .mbr() or _x, _y, _w and _h.
+  * Get the rectangular region (in terms of the grid, with grid size `cellsize`), where the object may fall in. This region is determined by the object's bounding box.
+  * The `cellsize` is 64 by default.
+  * @see Crafty.HashMap.constructor
+	*/
 	HashMap.key = function (obj) {
 		if (obj.hasOwnProperty('mbr')) {
 			obj = obj.mbr();
@@ -1251,7 +1408,14 @@
 	};
 
 	parent.HashMap = HashMap;
-})(Crafty); Crafty.map = new Crafty.HashMap();
+})(Crafty);
+ /**@
+* #Crafty.map
+* @category 2D
+* Functions related with quering entities. 
+* @see Crafty.HashMap
+*/
+Crafty.map = new Crafty.HashMap();
 var M = Math,
 	Mc = M.cos,
 	Ms = M.sin,
@@ -1270,38 +1434,47 @@ var M = Math,
 Crafty.c("2D", {
 /**@
 	* #.x
+	* @comp 2D
 	* The `x` position on the stage. When modified, will automatically be redrawn.
 	* Is actually a getter/setter so when using this value for calculations and not modifying it,
 	* use the `._x` property.
+	* @see ._attr
 	*/
 	_x: 0,
 	/**@
 	* #.y
+	* @comp 2D
 	* The `y` position on the stage. When modified, will automatically be redrawn.
 	* Is actually a getter/setter so when using this value for calculations and not modifying it,
 	* use the `._y` property.
+	* @see ._attr
 	*/
 	_y: 0,
 	/**@
 	* #.w
+	* @comp 2D
 	* The width of the entity. When modified, will automatically be redrawn.
 	* Is actually a getter/setter so when using this value for calculations and not modifying it,
 	* use the `._w` property.
 	*
 	* Changing this value is not recommended as canvas has terrible resize quality and DOM will just clip the image.
+	* @see ._attr
 	*/
 	_w: 0,
 	/**@
-	* #.x
+	* #.h
+	* @comp 2D
 	* The height of the entity. When modified, will automatically be redrawn.
 	* Is actually a getter/setter so when using this value for calculations and not modifying it,
 	* use the `._h` property.
 	*
 	* Changing this value is not recommended as canvas has terrible resize quality and DOM will just clip the image.
+	* @see ._attr
 	*/
 	_h: 0,
 	/**@
 	* #.z
+	* @comp 2D
 	* The `z` index on the stage. When modified, will automatically be redrawn.
 	* Is actually a getter/setter so when using this value for calculations and not modifying it,
 	* use the `._z` property.
@@ -1309,29 +1482,42 @@ Crafty.c("2D", {
 	* A higher `z` value will be closer to the front of the stage. A smaller `z` value will be closer to the back.
 	* A global Z index is produced based on its `z` value as well as the GID (which entity was created first).
 	* Therefore entities will naturally maintain order depending on when it was created if same z value.
+	* @see ._attr
 	*/
 	_z: 0,
 	/**@
 	* #.rotation
+	* @comp 2D
 	* Set the rotation of your entity. Rotation takes degrees in a clockwise direction.
 	* It is important to note there is no limit on the rotation value. Setting a rotation
 	* mod 360 will give the same rotation without reaching huge numbers.
+	* @see ._attr
 	*/
 	_rotation: 0,
 	/**@
 	* #.alpha
+	* @comp 2D
 	* Transparency of an entity. Must be a decimal value between 0.0 being fully transparent to 1.0 being fully opaque.
 	*/
 	_alpha: 1.0,
 	/**@
 	* #.visible
+	* @comp 2D
 	* If the entity is visible or not. Accepts a true or false value.
 	* Can be used for optimization by setting an entities visibility to false when not needed to be drawn.
 	*
 	* The entity will still exist and can be collided with but just won't be drawn.
+  * @see Crafty.DrawManager.draw, Crafty.DrawManager.drawAll
 	*/
 	_visible: true,
-	_global: null,
+
+	/**@
+	* #._globalZ
+	* @comp 2D
+	* When two entities overlap, the one with the larger `_globalZ` will be on top of the other.
+	* @see Crafty.DrawManager.draw, Crafty.DrawManager.drawAll
+	*/
+	_globalZ: null,
 
 	_origin: null,
 	_mbr: null,
@@ -1340,116 +1526,158 @@ Crafty.c("2D", {
 	_parent: null,
 	_changed: false,
 
+	_defineGetterSetter_setter: function() {
+		//create getters and setters using __defineSetter__ and __defineGetter__
+		this.__defineSetter__('x', function (v) { this._attr('_x', v); });
+		this.__defineSetter__('y', function (v) { this._attr('_y', v); });
+		this.__defineSetter__('w', function (v) { this._attr('_w', v); });
+		this.__defineSetter__('h', function (v) { this._attr('_h', v); });
+		this.__defineSetter__('z', function (v) { this._attr('_z', v); });
+		this.__defineSetter__('rotation', function (v) { this._attr('_rotation', v); });
+		this.__defineSetter__('alpha', function (v) { this._attr('_alpha', v); });
+		this.__defineSetter__('visible', function (v) { this._attr('_visible', v); });
+
+		this.__defineGetter__('x', function () { return this._x; });
+		this.__defineGetter__('y', function () { return this._y; });
+		this.__defineGetter__('w', function () { return this._w; });
+		this.__defineGetter__('h', function () { return this._h; });
+		this.__defineGetter__('z', function () { return this._z; });
+		this.__defineGetter__('rotation', function () { return this._rotation; });
+		this.__defineGetter__('alpha', function () { return this._alpha; });
+		this.__defineGetter__('visible', function () { return this._visible; });
+		this.__defineGetter__('parent', function () { return this._parent; });
+		this.__defineGetter__('numChildren', function () { return this._children.length; });
+	},
+
+	_defineGetterSetter_defineProperty: function() {
+		Object.defineProperty(this, 'x', {
+				set: function (v) { this._attr('_x', v); }
+				, get: function () { return this._x; }
+				, configurable: true
+			});
+
+		Object.defineProperty(this, 'y', {
+				set: function (v) { this._attr('_y', v); }
+				, get: function () { return this._y; }
+				, configurable: true
+			});
+
+		Object.defineProperty(this, 'w', {
+				set: function (v) { this._attr('_w', v); }
+				, get: function () { return this._w; }
+				, configurable: true
+			});
+
+		Object.defineProperty(this, 'h', {
+				set: function (v) { this._attr('_h', v); }
+				, get: function () { return this._h; }
+				, configurable: true
+			});
+
+		Object.defineProperty(this, 'z', {
+				set: function (v) { this._attr('_z', v); }
+				, get: function () { return this._z; }
+				, configurable: true
+			});
+
+		Object.defineProperty(this, 'rotation', {
+			set: function (v) { this._attr('_rotation', v); }
+			, get: function () { return this._rotation; }
+			, configurable: true
+		});
+
+		Object.defineProperty(this, 'alpha', {
+			set: function (v) { this._attr('_alpha', v); }
+			, get: function () { return this._alpha; }
+			, configurable: true
+		});
+
+		Object.defineProperty(this, 'visible', {
+			set: function (v) { this._attr('_visible', v); }
+			, get: function () { return this._visible; }
+			, configurable: true
+		});
+	},
+
+	_defineGetterSetter_fallback: function() {
+		//set the public properties to the current private properties
+		this.x = this._x;
+		this.y = this._y;
+		this.w = this._w;
+		this.h = this._h;
+		this.z = this._z;
+		this.rotation = this._rotation;
+		this.alpha = this._alpha;
+		this.visible = this._visible;
+
+		//on every frame check for a difference in any property
+		this.bind("EnterFrame", function () {
+			//if there are differences between the public and private properties
+			if (this.x !== this._x || this.y !== this._y ||
+				this.w !== this._w || this.h !== this._h ||
+				this.z !== this._z || this.rotation !== this._rotation ||
+				this.alpha !== this._alpha || this.visible !== this._visible) {
+
+				//save the old positions
+				var old = this.mbr() || this.pos();
+
+				//if rotation has changed, use the private rotate method
+				if (this.rotation !== this._rotation) {
+					this._rotate(this.rotation);
+				} else {
+					//update the MBR
+					var mbr = this._mbr, moved = false;
+					// If the browser doesn't have getters or setters,
+					// {x, y, w, h, z} and {_x, _y, _w, _h, _z} may be out of synce,
+					// in which case t checks if they are different on tick and executes the Change event.
+					if (mbr) { //check each value to see which has changed
+						if (this.x !== this._x) { mbr._x -= this.x - this._x; moved = true; }
+						else if (this.y !== this._y) { mbr._y -= this.y - this._y; moved = true; }
+						else if (this.w !== this._w) { mbr._w -= this.w - this._w; moved = true; }
+						else if (this.h !== this._h) { mbr._h -= this.h - this._h; moved = true; }
+						else if (this.z !== this._z) { mbr._z -= this.z - this._z; moved = true; }
+					}
+
+					//if the moved flag is true, trigger a move
+					if (moved) this.trigger("Move", old);
+				}
+
+				//set the public properties to the private properties
+				this._x = this.x;
+				this._y = this.y;
+				this._w = this.w;
+				this._h = this.h;
+				this._z = this.z;
+				this._rotation = this.rotation;
+				this._alpha = this.alpha;
+				this._visible = this.visible;
+
+				//trigger the changes
+				this.trigger("Change", old);
+				//without this entities weren't added correctly to Crafty.map.map in IE8.
+				//not entirely sure this is the best way to fix it though
+				this.trigger("Move", old);
+			}
+		});
+  },
+
 	init: function() {
-		this._global = this[0];
+		this._globalZ = this[0];
 		this._origin = { x: 0, y: 0 };
 		this._children = [];
 
 		if(Crafty.support.setter) {
-			//create getters and setters
-			this.__defineSetter__('x', function (v) { this._attr('_x', v); });
-			this.__defineSetter__('y', function (v) { this._attr('_y', v); });
-			this.__defineSetter__('w', function (v) { this._attr('_w', v); });
-			this.__defineSetter__('h', function (v) { this._attr('_h', v); });
-			this.__defineSetter__('z', function (v) { this._attr('_z', v); });
-			this.__defineSetter__('rotation', function (v) { this._attr('_rotation', v); });
-			this.__defineSetter__('alpha', function (v) { this._attr('_alpha', v); });
-			this.__defineSetter__('visible', function (v) { this._attr('_visible', v); });
-
-			this.__defineGetter__('x', function () { return this._x; });
-			this.__defineGetter__('y', function () { return this._y; });
-			this.__defineGetter__('w', function () { return this._w; });
-			this.__defineGetter__('h', function () { return this._h; });
-			this.__defineGetter__('z', function () { return this._z; });
-			this.__defineGetter__('rotation', function () { return this._rotation; });
-			this.__defineGetter__('alpha', function () { return this._alpha; });
-			this.__defineGetter__('visible', function () { return this._visible; });
-			this.__defineGetter__('parent', function () { return this._parent; });
-			this.__defineGetter__('numChildren', function () { return this._children.length; });
-
-			//IE9 supports Object.defineProperty
+      this._defineGetterSetter_setter();
 		} else if (Crafty.support.defineProperty) {
-
-			Object.defineProperty(this, 'x', { set: function (v) { this._attr('_x', v); }, get: function () { return this._x; }, configurable: true });
-			Object.defineProperty(this, 'y', { set: function (v) { this._attr('_y', v); }, get: function () { return this._y; }, configurable: true });
-			Object.defineProperty(this, 'w', { set: function (v) { this._attr('_w', v); }, get: function () { return this._w; }, configurable: true });
-			Object.defineProperty(this, 'h', { set: function (v) { this._attr('_h', v); }, get: function () { return this._h; }, configurable: true });
-			Object.defineProperty(this, 'z', { set: function (v) { this._attr('_z', v); }, get: function () { return this._z; }, configurable: true });
-
-			Object.defineProperty(this, 'rotation', {
-				set: function (v) { this._attr('_rotation', v); }, get: function () { return this._rotation; }, configurable: true
-			});
-
-			Object.defineProperty(this, 'alpha', {
-				set: function (v) { this._attr('_alpha', v); }, get: function () { return this._alpha; }, configurable: true
-			});
-
-			Object.defineProperty(this, 'visible', {
-				set: function (v) { this._attr('_visible', v); }, get: function () { return this._visible; }, configurable: true
-			});
-
+			//IE9 supports Object.defineProperty
+      this._defineGetterSetter_defineProperty();
 		} else {
 			/*
-			if no setters, check on every frame for a difference
-			between this._(x|y|w|h|z...) and this.(x|y|w|h|z)
+			If no setters and getters are supported (e.g. IE8) supports,
+			check on every frame for a difference between this._(x|y|w|h|z...)
+			and this.(x|y|w|h|z) and update accordingly.
 			*/
-
-			//set the public properties to the current private properties
-			this.x = this._x;
-			this.y = this._y;
-			this.w = this._w;
-			this.h = this._h;
-			this.z = this._z;
-			this.rotation = this._rotation;
-			this.alpha = this._alpha;
-			this.visible = this._visible;
-
-			//on every frame check for a difference in any property
-			this.bind("EnterFrame", function () {
-				//if there are differences between the public and private properties
-				if (this.x !== this._x || this.y !== this._y ||
-				   this.w !== this._w || this.h !== this._h ||
-				   this.z !== this._z || this.rotation !== this._rotation ||
-				   this.alpha !== this._alpha || this.visible !== this._visible) {
-
-					//save the old positions
-					var old = this.mbr() || this.pos();
-
-					//if rotation has changed, use the private rotate method
-					if (this.rotation !== this._rotation) {
-						this._rotate(this.rotation);
-					} else {
-						//update the MBR
-						var mbr = this._mbr, moved = false;
-						if (mbr) { //check each value to see which has changed
-							if (this.x !== this._x) { mbr._x -= this.x - this._x; moved = true; }
-							else if (this.y !== this._y) { mbr._y -= this.y - this._y; moved = true; }
-							else if (this.w !== this._w) { mbr._w -= this.w - this._w; moved = true; }
-							else if (this.h !== this._h) { mbr._h -= this.h - this._h; moved = true; }
-							else if (this.z !== this._z) { mbr._z -= this.z - this._z; moved = true; }
-						}
-
-						//if the moved flag is true, trigger a move
-						if (moved) this.trigger("Move", old);
-					}
-
-					//set the public properties to the private properties
-					this._x = this.x;
-					this._y = this.y;
-					this._w = this.w;
-					this._h = this.h;
-					this._z = this.z;
-					this._rotation = this.rotation;
-					this._alpha = this.alpha;
-					this._visible = this.visible;
-
-					//trigger the changes
-					this.trigger("Change", old);
-					//without this entities weren't added correctly to Crafty.map.map in IE8.
-					//not entirely sure this is the best way to fix it though
-					this.trigger("Move", old);
-				}
-			});
+      this._defineGetterSetter_fallback();
 		}
 
 		//insert self into the HashMap
@@ -1634,7 +1862,10 @@ Crafty.c("2D", {
 		};
 	},
 
-	/**
+	/**@
+	* #.mbr
+	* @comp 2D
+	* @sign public Object .mbr()
 	* Returns the minimum bounding rectangle. If there is no rotation
 	* on the entity it will return the rect.
 	*/
@@ -1702,6 +1933,14 @@ Crafty.c("2D", {
 		return this;
 	},
 
+	/**@
+	* #._cascade
+	* @comp 2D
+  * @sign public void ._cascade(e)
+	* @param e - Amount to move X
+	* Shift or move the entity by an amount. Use negative values
+	* for an opposite direction.
+	*/
 	/**
 	* Move or rotate all the children for this entity
 	*/
@@ -1840,7 +2079,9 @@ Crafty.c("2D", {
 		this._attr('_rotation', e.theta);
 	},
 
-	/**
+	/**@
+	* #._attr
+	* @comp 2D
 	* Setter method for all 2D properties including
 	* x, y, w, h, alpha, rotation and visible.
 	*/
@@ -1855,7 +2096,7 @@ Crafty.c("2D", {
 			this.trigger("Rotate");
 			//set the global Z and trigger reorder just incase
 		} else if (name === '_z') {
-			this._global = parseInt(value + Crafty.zeroFill(this[0], 5), 10); //magic number 10e5 is the max num of entities
+			this._globalZ = parseInt(value + Crafty.zeroFill(this[0], 5), 10); //magic number 10e5 is the max num of entities
 			this.trigger("reorder");
 			//if the rect bounds change, update the MBR and trigger move
 		} else if (name == '_x' || name === '_y' || name === '_w' || name === '_h') {
@@ -1906,14 +2147,14 @@ Crafty.c("Gravity", {
 	* @sign public this .gravity([comp])
 	* @param comp - The name of a component that will stop this entity from falling
 	* Enable gravity for this entity no matter whether comp parameter is not specified, 
-  * If comp parameter is specified all entities with that component will stop this entity from falling.
+	* If comp parameter is specified all entities with that component will stop this entity from falling.
 	* For a player entity in a platform game this would be a component that is added to all entities
 	* that the player should be able to walk on.
 	* ~~~
 	* Crafty.e("2D, DOM, Color, Gravity")
-  *   .color("red")
-  *   .attr({ w: 100, h: 100 })
-  *   .gravity("platform")
+	*	 .color("red")
+	*	 .attr({ w: 100, h: 100 })
+	*	 .gravity("platform")
 	* ~~~
 	*/
 	gravity: function (comp) {
@@ -1932,16 +2173,16 @@ Crafty.c("Gravity", {
 	* Set the gravitational constant to g. The default is .2. The greater g, the faster the object falls.
 	* ~~~
 	* Crafty.e("2D, DOM, Color, Gravity")
-  *   .color("red")
-  *   .attr({ w: 100, h: 100 })
-  *   .gravity("platform")
-  *   .gravityConst(2)
+	*   .color("red")
+	*   .attr({ w: 100, h: 100 })
+	*   .gravity("platform")
+	*   .gravityConst(2)
 	* ~~~
 	*/
-  gravityConst: function(g) {
-    this._gravityConst=g;
+	gravityConst: function(g) {
+		this._gravityConst=g;
 		return this;
-  },
+	},
 
 	_enterframe: function () {
 		if (this._falling) {
@@ -2022,6 +2263,7 @@ Crafty.c("Gravity", {
 * @example
 * ~~~
 * new Crafty.polygon([50,0],[100,100],[0,100]);
+* new Crafty.polygon([[50,0],[100,100],[0,100]]);
 * ~~~
 */
 Crafty.polygon = function (poly) {
@@ -2341,16 +2583,16 @@ Crafty.c("Collision", {
 	* Creates an enterframe event calling .hit() each time and if collision detected will invoke the callback.
 	* @see .hit
 	*/
-	onHit: function (comp, fn, fnOff) {
+	onHit: function (comp, callback, callbackOff) {
 		var justHit = false;
 		this.bind("EnterFrame", function () {
 			var hitdata = this.hit(comp);
 			if (hitdata) {
 				justHit = true;
-				fn.call(this, hitdata);
+				callback.call(this, hitdata);
 			} else if (justHit) {
-				if (typeof fnOff == 'function') {
-					fnOff.call(this);
+				if (typeof callbackOff == 'function') {
+					callbackOff.call(this);
 				}
 				justHit = false;
 			}
@@ -2540,6 +2782,20 @@ Crafty.c("DOM", {
 		}
 
 		this.bind("Remove", this.undraw);
+		this.bind("RemoveComponent", function (compName) {
+			if (compName === "DOM")
+				this.undraw();
+		});
+	},
+
+	/**@
+	* #.getDomId
+	* @comp DOM
+	* @sign public this .getId()
+	* Get the Id of the DOM element used to represent the entity.
+	*/
+	getDomId: function() {
+		return this._element.id;
 	},
 
 	/**@
@@ -2655,7 +2911,9 @@ Crafty.c("DOM", {
 	* Removes the element from the stage.
 	*/
 	undraw: function () {
-		Crafty.stage.inner.removeChild(this._element);
+		if (this._element) {
+			Crafty.stage.inner.removeChild(this._element);
+		}
 		return this;
 	},
 
@@ -2820,7 +3078,8 @@ Crafty.extend({
 			}
 		}
 	}
-}); /**@
+});
+ /**@
 * #Crafty.support
 * @category Misc, Core
 * Determines feature support for what Crafty can do.
@@ -2952,7 +3211,7 @@ Crafty.extend({
 	* @see Sprite
 	*/
 	sprite: function (tile, tileh, url, map, paddingX, paddingY) {
-		var pos, temp, x, y, w, h, img;
+		var spriteName, temp, x, y, w, h, img;
 
 		//if no tile value, default to 1
 		if (typeof tile === "string") {
@@ -2984,8 +3243,8 @@ Crafty.extend({
 			Crafty.assets[url] = img;
 			img.onload = function () {
 				//all components with this img are now ready
-				for (var pos in map) {
-					Crafty(pos).each(function () {
+				for (spriteName in map) {
+					Crafty(spriteName).each(function () {
 						this.ready = true;
 						this.trigger("Change");
 					});
@@ -2993,17 +3252,17 @@ Crafty.extend({
 			};
 		}
 
-		for (pos in map) {
-			if (!map.hasOwnProperty(pos)) continue;
+		for (spriteName in map) {
+			if (!map.hasOwnProperty(spriteName)) continue;
 
-			temp = map[pos];
+			temp = map[spriteName];
 			x = temp[0] * (tile + paddingX);
 			y = temp[1] * (tileh + paddingY);
 			w = temp[2] * tile || tile;
 			h = temp[3] * tileh || tileh;
 
 			//generates sprite components for each tile in the map
-			Crafty.c(pos, {
+			Crafty.c(spriteName, {
 				ready: false,
 				__coord: [x, y, w, h],
 
@@ -3053,18 +3312,18 @@ Crafty.extend({
 	* Callbacks are passed with event data.
 	* @see Crafty.removeEvent
 	*/
-	addEvent: function (ctx, obj, type, fn) {
+	addEvent: function (ctx, obj, type, callback) {
 		if (arguments.length === 3) {
-			fn = type;
+			callback = type;
 			type = obj;
 			obj = window.document;
 		}
 
 		//save anonymous function to be able to remove
-		var afn = function (e) { var e = e || window.event; fn.call(ctx, e) },
+		var afn = function (e) { var e = e || window.event; callback.call(ctx, e) },
 			id = ctx[0] || "";
 
-		if (!this._events[id + obj + type + fn]) this._events[id + obj + type + fn] = afn;
+		if (!this._events[id + obj + type + callback]) this._events[id + obj + type + callback] = afn;
 		else return;
 
 		if (obj.attachEvent) { //IE
@@ -3087,22 +3346,22 @@ Crafty.extend({
 	* to the callback method.
 	* @see Crafty.addEvent
 	*/
-	removeEvent: function (ctx, obj, type, fn) {
+	removeEvent: function (ctx, obj, type, callback) {
 		if (arguments.length === 3) {
-			fn = type;
+			callback = type;
 			type = obj;
 			obj = window.document;
 		}
 
 		//retrieve anonymouse function
 		var id = ctx[0] || "",
-			afn = this._events[id + obj + type + fn];
+			afn = this._events[id + obj + type + callback];
 
 		if (afn) {
 			if (obj.detachEvent) {
 				obj.detachEvent('on' + type, afn);
 			} else obj.removeEventListener(type, afn, false);
-			delete this._events[id + obj + type + fn];
+			delete this._events[id + obj + type + callback];
 		}
 	},
 
@@ -3464,6 +3723,21 @@ Crafty.extend({
 			}
 		},
 
+		/**@
+		 * #Crafty.viewport.init
+		 * @comp Crafty.viewport
+		 * @sign public void Crafty.viewport.init([Number width, Number height])
+		 * @param width - Width of the viewport
+		 * @param height - Height of the viewport
+		 *
+		 * Initialize the viewport. If the arguments 'width' or 'height' are missing, or Crafty.mobile is true, use Crafty.DOM.window.width and Crafty.DOM.window.height (full screen model).
+		 * Create a div with id `cr-stage`, if there is not already an HTMLElement with id `cr-stage` (by `Crafty.viewport.init`).
+		 *
+		 * @see Crafty.mobile
+		 * @see Crafty.DOM.window.width
+		 * @see Crafty.DOM.window.height
+		 * @see Crafty.stage
+		 */
 		init: function (w, h) {
 			Crafty.DOM.window.init();
 
@@ -3473,6 +3747,33 @@ Crafty.extend({
 
 			//check if stage exists
 			var crstage = document.getElementById("cr-stage");
+
+			/**@
+			 * #Crafty.stage
+			 * @category Core
+			 * The stage where all the DOM entities will be placed.
+			 */
+
+			/**@
+			 * #Crafty.stage.elem
+			 * @comp Crafty.stage
+			 * The `#cr-stage` div element.
+			 */
+
+			/**@
+			 * #Crafty.stage.inner
+			 * @comp Crafty.stage
+			 * `Crafty.stage.inner` is a div inside the `#cr-stage` div that holds all DOM entities.
+			 * If you use canvas, a `canvas` element is created at the same level in the dom
+			 * as the the `Crafty.stage.inner` div. So the hierarchy in the DOM is
+			 * 
+			 * `Crafty.stage.elem`
+			 * <!-- not sure how to do indentation in the document-->
+			 *
+			 *     - `Crafty.stage.inner` (a div HTMLElement)
+			 *
+			 *     - `Crafty.canvas._canvas` (a canvas HTMLElement) 
+			 */
 
 			//create stage div to contain everything
 			Crafty.stage = {
@@ -3835,8 +4136,7 @@ Crafty.c("viewport", {
  /**@
 * #Canvas
 * @category Graphics
-* Draws itself onto a canvas. Crafty.canvas.init() must be called before hand to initialize
-* the canvas element.
+* Draws itself onto a canvas. Crafty.canvas.init() will be automatically called it is not called already (hence the canvas element dosen't exist).
 * @trigger Draw - when the entity is ready to be drawn to the stage - {type: "canvas", pos, co, ctx}
 * @trigger NoCanvas - if the browser does not support canvas
 */
@@ -3940,21 +4240,21 @@ Crafty.extend({
 		* #Crafty.canvas.context
 		* @comp Crafty.canvas
 		* This will return the 2D context of the main canvas element.
-		* The value returned from `Crafty.canvas.elem.getContext('2d')`.
+		* The value returned from `Crafty.canvas._canvas.getContext('2d')`.
 		*/
 		context: null,
 		/**@
-		* #Crafty.canvas.elem
+		* #Crafty.canvas._canvas
 		* @comp Crafty.canvas
 		* Main Canvas element
 		*/
-		elem: null,
 
 		/**@
 		* #Crafty.canvas.init
 		* @comp Crafty.canvas
 		* @sign public void Crafty.canvas.init(void)
-		* Creates a `canvas` element inside the stage element. Must be called
+    * @trigger NoCanvas - triggered if `Crafty.support.canvas` is false
+		* Creates a `canvas` element inside `Crafty.stage.elem`. Must be called
 		* before any entities with the Canvas component can be drawn.
 		*
 		* This method will automatically be called if no `Crafty.canvas.context` is
@@ -3982,12 +4282,31 @@ Crafty.extend({
 			Crafty.canvas._canvas = c;
 		}
 	}
-}); Crafty.extend({
+});
+ Crafty.extend({
 	over: null, //object mouseover, waiting for out
 	mouseObjs: 0,
 	mousePos: {},
 	lastEvent: null,
 	keydown: {},
+
+	/**@
+	* #Crafty.keydown
+	* @category Input
+	* Remembering what keys (referred by Unicode) are down.
+	* ~~~
+	* Crafty.c("Keyboard", {
+	*   isDown: function (key) {
+	*     if (typeof key === "string") {
+	*       key = Crafty.keys[key];
+	*     }
+	*     return !!Crafty.keydown[key];
+	*   }
+	* });
+	* ~~~
+	* @see Keyboard
+	* @see Crafty.keys
+	*/
 
 	mouseDispatch: function (e) {
 		if (!Crafty.mouseObjs) return;
@@ -4101,6 +4420,44 @@ Crafty.extend({
 
 	},
 
+
+	/**@
+	* #KeyboardEvent
+	* @category Input
+  * Keyboard Event triggerd by Crafty Core
+	* @trigger KeyDown - is triggered for each entity when the DOM 'keydown' event is triggered.
+	* @trigger KeyUp - is triggered for each entity when the DOM 'keyup' event is triggered.
+	* @example
+	* ~~~
+  * Crafty.e("2D, DOM, Color")
+  *   .attr({x: 100, y: 100, w: 50, h: 50})
+  *   .color("red")
+  *   .bind('KeyDown', function(e) {
+  *     if(e.key == Crafty.keys['LEFT_ARROW']) {
+  *       this.x=this.x-1;
+  *     } else if (e.key == Crafty.keys['RIGHT_ARROW']) {
+  *     this.x=this.x+1;
+  *     } else if (e.key == Crafty.keys['UP_ARROW']) {
+  *     this.y=this.y-1;
+  *     } else if (e.key == Crafty.keys['DOWN_ARROW']) {
+  *     this.y=this.y+1;
+  *     }
+  *   });
+	* ~~~
+	* @see Crafty.keys
+	*/
+
+	/**@
+	* #Crafty.eventObject
+	* @category Input
+	* Event Object used in Crafty for cross browser compatiblity
+	*/
+
+	/**@
+	* #.key
+	* @comp Crafty.eventObject
+	* Unicode of the key pressed
+	*/
 	keyboardDispatch: function (e) {
 		e.key = e.keyCode || e.which;
 		if (e.type === "keydown") {
@@ -4219,20 +4576,30 @@ Crafty.c("Mouse", {
 * @trigger StopDrag - is triggered when dragging ends - MouseEvent
 */
 Crafty.c("Draggable", {
-	_startX: 0,
-	_startY: 0,
+  _origMouseDOMPos: null,
+	_oldX: null,
+	_oldY: null,
 	_dragging: false,
+	_dir:null,
 
 	_ondrag: null,
 	_ondown: null,
 	_onup: null,
 
+  //Note: the code is note tested with zoom, etc., that may distort the direction between the viewport and the coordinate on the canvas.
 	init: function () {
 		this.requires("Mouse");
 		this._ondrag = function (e) {
 			var pos = Crafty.DOM.translate(e.clientX, e.clientY);
-			this.x = pos.x - this._startX;
-			this.y = pos.y - this._startY;
+      if(this._dir) {
+        var len = (pos.x - this._origMouseDOMPos.x) * this._dir.x
+        + (pos.y - this._origMouseDOMPos.y) * this._dir.y;
+        this.x = this._oldX + len * this._dir.x;
+        this.y = this._oldY + len * this._dir.y;
+      } else {
+        this.x = this._oldX + (pos.x - this._origMouseDOMPos.x);
+        this.y = this._oldY + (pos.y - this._origMouseDOMPos.y);
+      }
 
 			this.trigger("Dragging", e);
 		};
@@ -4241,8 +4608,9 @@ Crafty.c("Draggable", {
 			if (e.mouseButton !== Crafty.mouseButtons.LEFT) return;
 
 			//start drag
-			this._startX = e.realX - this._x;
-			this._startY = e.realY - this._y;
+      this._origMouseDOMPos = Crafty.DOM.translate(e.clientX, e.clientY);
+			this._oldX = this._x;
+			this._oldY = this._y;
 			this._dragging = true;
 
 			Crafty.addEvent(this, Crafty.stage.elem, "mousemove", this._ondrag);
@@ -4258,6 +4626,46 @@ Crafty.c("Draggable", {
 		};
 
 		this.enableDrag();
+	},
+
+	/**@
+	* #.dragDirection
+	* @comp Draggable
+	* @sign public this .dragDirection()
+  * Remove any previously specifed direction.
+  *
+	* @sign public this .dragDirection(vector)
+  * @param vector - Of the form of {x: valx, y: valy}, the vector (valx, valy) denotes the move direction.
+	* @sign public this .dragDirection(degree)
+  * @param degree - A number, the degree (clockwise) of the move direction with respect to the x axis. 
+	* Specify the dragging direction.
+	* @example
+	* ~~~
+	* this.dragDirection()
+	* this.dragDirection({x:1, y:0}) //Horizonatal
+	* this.dragDirection({x:0, y:1}) //Vertical
+  * // Note: because of the orientation of x and y axis,
+  * // this is 45 degree clockwise with respect to the x axis.
+	* this.dragDirection({x:1, y:1}) //45 degree.
+	* this.dragDirection(60) //60 degree.
+	* ~~~
+	*/
+	dragDirection: function(dir) {
+		if (typeof dir === 'undefined') {
+			this._dir=null;
+		} else if (("" + parseInt(dir)) == dir) { //dir is a number
+      this._dir={
+        x: Math.cos(dir/180*Math.PI)
+        , y: Math.sin(dir/180*Math.PI)
+      };
+    }
+    else {
+      var r=Math.sqrt(dir.x * dir.x + dir.y * dir.y)
+			this._dir={
+        x: dir.x/r
+        , y: dir.y/r
+      };
+		}
 	},
 
 	/**@
@@ -4334,6 +4742,10 @@ Crafty.c("Keyboard", {
 	* @sign public Boolean isDown(Number keyCode)
 	* @param keyCode - Key code in `Crafty.keys`.
 	* Determine if a certain key is currently down.
+	* ~~~
+	* entity.requires('KeyBoard').bind('KeyDown', function () { if (this.isDown('SPACE')) jump(); });
+	* ~~~
+	* @see Crafty.keys
 	*/
 	isDown: function (key) {
 		if (typeof key === "string") {
@@ -4353,6 +4765,35 @@ Crafty.c("Keyboard", {
 Crafty.c("Multiway", {
 	_speed: 3,
 
+  _keydown: function (e) {
+		if (this._keys[e.key]) {
+			this._movement.x = Math.round((this._movement.x + this._keys[e.key].x) * 1000) / 1000;
+			this._movement.y = Math.round((this._movement.y + this._keys[e.key].y) * 1000) / 1000;
+			this.trigger('NewDirection', this._movement);
+		}
+	},
+
+  _keyup: function (e) {
+		if (this._keys[e.key]) {
+			this._movement.x = Math.round((this._movement.x - this._keys[e.key].x) * 1000) / 1000;
+			this._movement.y = Math.round((this._movement.y - this._keys[e.key].y) * 1000) / 1000;
+			this.trigger('NewDirection', this._movement);
+		}
+	},
+
+  _enterframe: function () {
+		if (this.disableControls) return;
+
+		if (this._movement.x !== 0) {
+			this.x += this._movement.x;
+			this.trigger('Moved', { x: this.x - this._movement.x, y: this.y });
+		}
+		if (this._movement.y !== 0) {
+			this.y += this._movement.y;
+			this.trigger('Moved', { x: this.x, y: this.y - this._movement.y });
+		}
+	},
+
 	init: function () {
 		this._keyDirection = {};
 		this._keys = {};
@@ -4366,7 +4807,7 @@ Crafty.c("Multiway", {
 	* @sign public this .multiway([Number speed,] Object keyBindings )
 	* @param speed - Amount of pixels to move the entity whilst a key is down
 	* @param keyBindings - What keys should make the entity go in which direction. Direction is specified in degrees
-	* Constructor to initialize the speed and keyBindings. Component will listen for key events and move the entity appropriately.
+	* Constructor to initialize the speed and keyBindings. Component will listen to key events and move the entity appropriately.
 	*
 	* When direction changes a NewDirection event is triggered with an object detailing the new direction: {x: x_movement, y: y_movement}
 	* When entity has moved on either x- or y-axis a Moved event is triggered with an object specifying the old position {x: old_x, y: old_y}
@@ -4393,32 +4834,7 @@ Crafty.c("Multiway", {
 		this._keyDirection = keys;
 		this.speed(this._speed);
 
-		this.bind("KeyDown", function (e) {
-			if (this._keys[e.key]) {
-				this._movement.x = Math.round((this._movement.x + this._keys[e.key].x) * 1000) / 1000;
-				this._movement.y = Math.round((this._movement.y + this._keys[e.key].y) * 1000) / 1000;
-				this.trigger('NewDirection', this._movement);
-			}
-		})
-		.bind("KeyUp", function (e) {
-			if (this._keys[e.key]) {
-				this._movement.x = Math.round((this._movement.x - this._keys[e.key].x) * 1000) / 1000;
-				this._movement.y = Math.round((this._movement.y - this._keys[e.key].y) * 1000) / 1000;
-				this.trigger('NewDirection', this._movement);
-			}
-		})
-		.bind("EnterFrame", function () {
-			if (this.disableControls) return;
-
-			if (this._movement.x !== 0) {
-				this.x += this._movement.x;
-				this.trigger('Moved', { x: this.x - this._movement.x, y: this.y });
-			}
-			if (this._movement.y !== 0) {
-				this.y += this._movement.y;
-				this.trigger('Moved', { x: this.x, y: this.y - this._movement.y });
-			}
-		});
+		this.enableControl();
 
 		//Apply movement if key is down when created
 		for (var k in keys) {
@@ -4429,6 +4845,43 @@ Crafty.c("Multiway", {
 
 		return this;
 	},
+
+	/**@
+	* #.enableControl
+	* @comp Multiway
+	* @sign public this .enableControl()
+	* Enable the component to listen to key events.
+	*
+	* @example
+	* ~~~
+  * this.enableControl();
+	* ~~~
+	*/
+  enableControl: function() {
+		this.bind("KeyDown", this._keydown)
+		.bind("KeyUp", this._keyup)
+		.bind("EnterFrame", this._enterframe);
+		return this;
+  },
+
+	/**@
+	* #.disableControl
+	* @comp Multiway
+	* @sign public this .disableControl()
+	* Disable the component to listen to key events.
+	*
+	* @example
+	* ~~~
+  * this.disableControl();
+	* ~~~
+	*/
+
+  disableControl: function() {
+		this.unbind("KeyDown", this._keydown)
+		.unbind("KeyUp", this._keyup)
+		.unbind("EnterFrame", this._enterframe);
+		return this;
+  },
 
 	speed: function (speed) {
 		for (var k in this._keyDirection) {
@@ -4798,11 +5251,14 @@ function tweenEnterFrame(e) {
 	for (k in this._step) {
 		prop = this._step[k];
 		this[k] += prop.val;
-		if (prop.rem-- == 0) {
+		if (--prop.rem == 0) {
 			// decimal numbers rounding fix
 			this[k] = prop.prop;
 			this.trigger("TweenEnd", k);
-			delete this._step[k];
+			// make sure the duration wasn't changed in TweenEnd
+			if (this._step[k].rem <= 0) {
+				delete this._step[k];
+			}
 			this._numProps--;
 		}
 	}
@@ -4834,6 +5290,7 @@ Crafty.c("Sprite", {
 	__padding: null,
 	__trim: null,
 	img: null,
+  //ready is changed to true in Crafty.sprite
 	ready: false,
 
 	init: function () {
@@ -4930,10 +5387,10 @@ Crafty.c("Sprite", {
 		this.trigger("Change", old);
 		return this;
 	}
-}); /**@
+});
+ /**@
 * #Color
 * @category Graphics
-* @trigger Change - when the color changes
 * Draw a solid color for the entity
 */
 Crafty.c("Color", {
@@ -4955,9 +5412,11 @@ Crafty.c("Color", {
 	/**@
 	* #.color
 	* @comp Color
+	* @trigger Change - when the color changes
 	* @sign public this .color(String color)
+	* @sign public String .color()
 	* @param color - Color of the rectangle
-	* Will create a rectangle of solid color for the entity.
+	* Will create a rectangle of solid color for the entity, or return the color if no argument is given.
 	*
 	* The argument must be a color readable depending on which browser you
 	* choose to support. IE 8 and below doesn't support the rgb() syntax.
@@ -4968,6 +5427,7 @@ Crafty.c("Color", {
 	* ~~~
 	*/
 	color: function (color) {
+		if (!color) return this._color;
 		this._color = color;
 		this.trigger("Change");
 		return this;
@@ -4977,7 +5437,6 @@ Crafty.c("Color", {
 /**@
 * #Tint
 * @category Graphics
-* @trigger Change - when the tint is applied
 * Similar to Color by adding an overlay of semi-transparent color.
 *
 * *Note: Currently only works for Canvas*
@@ -5002,6 +5461,7 @@ Crafty.c("Tint", {
 	/**@
 	* #.tint
 	* @comp Tint
+	* @trigger Change - when the tint is applied
 	* @sign public this .tint(String color, Number strength)
 	* @param color - The color in hexidecimal
 	* @param strength - Level of opacity
@@ -5076,7 +5536,7 @@ Crafty.c("Image", {
 	* ~~~
 	* Create a repeating background.
 	* ~~~
-    * var bg = Crafty.e("2D, DOM, Image")
+	* var bg = Crafty.e("2D, DOM, Image")
 	*              .attr({w: Crafty.viewport.width, h: Crafty.viewport.height})
 	*              .image("bg.png", "repeat");
 	* ~~~
@@ -5180,12 +5640,22 @@ Crafty.extend({
 		return;
 	},
 
-	rgbLookup: {},
-
+	/**@
+	* #Crafty.toRGB
+	* @category Graphics
+	* @sign public String Crafty.scene(String hex[, Number alpha])
+	* @param hex - a 6 character hex number string representing RGB color
+	* @param alpha - The alpha value.
+	* Get a rgb string or rgba string (if `alpha` presents).
+	* @example
+	* ~~~
+	* Crafty.toRGB("ffffff"); // rgb(255,255,255)
+	* Crafty.toRGB("#ffffff"); // rgb(255,255,255)
+	* Crafty.toRGB("ffffff", .5); // rgba(255,255,255,0.5)
+	* ~~~
+	* @see Text.textColor
+	*/
 	toRGB: function (hex, alpha) {
-		var lookup = this.rgbLookup[hex];
-		if (lookup) return lookup;
-
 		var hex = (hex.charAt(0) === '#') ? hex.substr(1) : hex,
 			c = [], result;
 
@@ -5194,31 +5664,52 @@ Crafty.extend({
 		c[2] = parseInt(hex.substr(4, 2), 16);
 
 		result = alpha === undefined ? 'rgb(' + c.join(',') + ')' : 'rgba(' + c.join(',') + ',' + alpha + ')';
-		lookup = result;
 
 		return result;
 	}
 });
 
-/**
-* Draw Manager will manage objects to be drawn and implement
+/**@
+* #Crafty.DrawManager
+* @category Graphics
+* @sign Crafty.DrawManager
+* An internal object manage objects to be drawn and implement
 * the best method of drawing in both DOM and canvas
 */
 Crafty.DrawManager = (function () {
 	/** array of dirty rects on screen */
-	var register = [],
+	var dirty_rects = [],
 	/** array of DOMs needed updating */
 		dom = [];
 
 	return {
-	/** Quick count of 2D objects */
+		/**@
+		* #Crafty.DrawManager.total2D
+		* @comp Crafty.DrawManager
+		* Total number of the entities that have the `2D` component.
+		*/
 		total2D: Crafty("2D").length,
 
+		/**@
+		* #Crafty.DrawManager.onScreen
+		* @comp Crafty.DrawManager
+		* @sign public Crafty.DrawManager.onScreen(Object rect)
+		* @param rect - A rectangle with field {_x: x_val, _y: y_val, _w: w_val, _h: h_val}
+		* Test if a rectangle is completely in viewport
+		*/
 		onScreen: function (rect) {
 			return Crafty.viewport._x + rect._x + rect._w > 0 && Crafty.viewport._y + rect._y + rect._h > 0 &&
 				   Crafty.viewport._x + rect._x < Crafty.viewport.width && Crafty.viewport._y + rect._y < Crafty.viewport.height;
 		},
 
+		/**@
+		* #Crafty.DrawManager.merge
+		* @comp Crafty.DrawManager
+		* @sign public Object Crafty.DrawManager.merge(Object set)
+		* @param set - an array of rectangular regions
+		* Merged into non overlapping rectangular region
+		* Its an optimization for the redraw regions.
+		*/
 		merge: function (set) {
 			do {
 				var newset = [], didMerge = false, i = 0,
@@ -5258,9 +5749,13 @@ Crafty.DrawManager = (function () {
 			return set;
 		},
 
-		/**
-		* Calculate the bounding rect of dirty data
-		* and add to the register
+		/**@
+		* #Crafty.DrawManager.add
+		* @comp Crafty.DrawManager
+		* @sign public Crafty.DrawManager.add(old, current)
+		* @param old - Undocumented
+		* @param current - Undocumented
+		* Calculate the bounding rect of dirty data and add to the register of dirty rectangles
 		*/
 		add: function add(old, current) {
 			if (!current) {
@@ -5296,28 +5791,43 @@ Crafty.DrawManager = (function () {
 			rect._w = (rect._w === ~~rect._w) ? rect._w : rect._w + 1 | 0;
 			rect._h = (rect._h === ~~rect._h) ? rect._h : rect._h + 1 | 0;
 
-			//add to register, check for merging
-			register.push(rect);
+			//add to dirty_rects, check for merging
+			dirty_rects.push(rect);
 
 			//if it got merged
 			return true;
 		},
 
+		/**@
+		* #Crafty.DrawManager.debug
+		* @comp Crafty.DrawManager
+		* @sign public Crafty.DrawManager.debug()
+		* Undocumented
+		*/
 		debug: function () {
-			console.log(register, dom);
+			console.log(dirty_rects, dom);
 		},
 
+		/**@
+		* #Crafty.DrawManager.draw
+		* @comp Crafty.DrawManager
+		* @sign public Crafty.DrawManager.draw([Object rect])
+    * @param rect - a rectangular region {_x: x_val, _y: y_val, _w: w_val, _h: h_val}
+		* - If rect is omitted, redraw within the viewport
+		* - If rect is provided, redraw within the rect
+		*/
 		drawAll: function (rect) {
-			var rect = rect || Crafty.viewport.rect(), q,
-				i = 0, l, ctx = Crafty.canvas.context,
+			var rect = rect || Crafty.viewport.rect(),
+				q = Crafty.map.search(rect),
+				i = 0,
+				l = q.length,
+				ctx = Crafty.canvas.context,
 				current;
-
-			q = Crafty.map.search(rect);
-			l = q.length;
 
 			ctx.clearRect(rect._x, rect._y, rect._w, rect._h);
 
-			q.sort(function (a, b) { return a._global - b._global; });
+			//sort the objects by the global Z
+			q.sort(function (a, b) { return a._globalZ - b._globalZ; });
 			for (; i < l; i++) {
 				current = q[i];
 				if (current._visible && current.__c.Canvas) {
@@ -5327,9 +5837,13 @@ Crafty.DrawManager = (function () {
 			}
 		},
 
-		/**
-		* Calculate the common bounding rect of multiple canvas entities
-		* Returns coords
+		/**@
+		* #Crafty.DrawManager.boundingRect
+		* @comp Crafty.DrawManager
+		* @sign public Crafty.DrawManager.boundingRect(set)
+		* @param set - Undocumented
+		* - Calculate the common bounding rect of multiple canvas entities.
+		* - Returns coords
 		*/
 		boundingRect: function (set) {
 			if (!set || !set.length) return;
@@ -5351,37 +5865,42 @@ Crafty.DrawManager = (function () {
 			return master;
 		},
 
-		/**
-		* Redraw all the dirty regions
+		/**@
+		* #Crafty.DrawManager.draw
+		* @comp Crafty.DrawManager
+		* @sign public Crafty.DrawManager.draw()
+		*	- If the number of rects is over 60% of the total number of objects
+		*	do the naive method redrawing `Crafty.DrawManager.drawAll`
+		* - Otherwise, clear the dirty regions, and redraw entities overlapping the dirty regions.
+    * @see Canvas.draw, DOM.draw
 		*/
 		draw: function draw() {
-			//if nothing in register, stop
-			if (!register.length && !dom.length) return;
+			//if nothing in dirty_rects, stop
+			if (!dirty_rects.length && !dom.length) return;
 
-			var i = 0, l = register.length, k = dom.length, rect, q,
+			var i = 0, l = dirty_rects.length, k = dom.length, rect, q,
 				j, len, dupes, obj, ent, objs = [], ctx = Crafty.canvas.context;
 
 			//loop over all DOM elements needing updating
 			for (; i < k; ++i) {
 				dom[i].draw()._changed = false;
 			}
-			//reset counter and DOM array
-			dom.length = i = 0;
-
-			//again, stop if nothing in register
+			//reset DOM array
+      dom.length = 0;
+			//again, stop if nothing in dirty_rects
 			if (!l) { return; }
 
 			//if the amount of rects is over 60% of the total objects
 			//do the naive method redrawing
 			if (l / this.total2D > 0.6) {
 				this.drawAll();
-				register.length = 0;
+				dirty_rects.length = 0;
 				return;
 			}
 
-			register = this.merge(register);
-			for (; i < l; ++i) { //loop over every dirty rect
-				rect = register[i];
+			dirty_rects = this.merge(dirty_rects);
+			for (i = 0; i < l; ++i) { //loop over every dirty rect
+				rect = dirty_rects[i];
 				if (!rect) continue;
 				q = Crafty.map.search(rect, false); //search for ents under dirty rect
 
@@ -5404,7 +5923,7 @@ Crafty.DrawManager = (function () {
 			}
 
 			//sort the objects by the global Z
-			objs.sort(function (a, b) { return a.obj._global - b.obj._global; });
+			objs.sort(function (a, b) { return a.obj._globalZ - b.obj._globalZ; });
 			if (!objs.length){ return; }
 
 			//loop over the objects
@@ -5436,17 +5955,18 @@ Crafty.DrawManager = (function () {
 				ctx.closePath();
 				ctx.restore();
 
-				//allow entity to re-register
+				//allow entity to re-dirty_rects
 				ent._changed = false;
 			}
 
-			//empty register
-			register.length = 0;
+			//empty dirty_rects
+			dirty_rects.length = 0;
 			//all merged IDs are now invalid
 			merged = {};
 		}
 	};
-})(); Crafty.extend({
+})();
+ Crafty.extend({
     /**@
 * #Crafty.isometric
 * @category 2D
@@ -5456,6 +5976,11 @@ Crafty.DrawManager = (function () {
         _tile: {
             width: 0,
             height: 0
+        },
+        _elements:{},
+        _pos: {
+            x:0,
+            y:0
         },
         _z: 0,
         /**@
@@ -5493,6 +6018,7 @@ Crafty.DrawManager = (function () {
     */
         place: function (x, y, z, obj) {
             var pos = this.pos2px(x,y);
+            pos.top -= z * (this._tile.width / 2);
             obj.attr({
                 x: pos.left + Crafty.viewport._x, 
                 y: pos.top + Crafty.viewport._y
@@ -5596,30 +6122,7 @@ Crafty.DrawManager = (function () {
                     end : end.y
                 }
             };
-        },
-        /**@
-         * #Crafty.isometric.slice
-         * @comp Crafty.isometric
-         * @sign public this Crafty.isometric.slice()
-         * Method to slice Entities into Parts depends on tile width/height and setup different z-index
-         * ~~~
-         * var iso = Crafty.isometric.size(128,96).centerAt(10,10); //Viewport is now moved
-         * iso.slice(10,10,Crafty.e("2D, DOM, building"));
-         * ~~~
-         */
-        slice:function(x,y,ent){
-        ent.destroy(); //Undraw original
-        var clone = {};
-        for(var _y = 0;_y < ent._h / this._tile.height*2;_y++){
-            for(var _x = 0;_x < ent._w /this._tile.width;_x++){
-                if((y+_y) & 1){
-                clone = ent.clone();
-                clone.crop(_x*this._tile.width,_y*this._tile.height/2,this._tile.width,this._tile.height);
-                this.place((x+_x),(y+_y),((x+_x)+1)*((y+_y)+1),clone);
-                }
-            }
-        }
-        }
+        } 
     }
 }); /**@
 * #Particles
@@ -5937,6 +6440,8 @@ Crafty.c("particles", {
 	* Add sound files and play them. Chooses best format for browser support.
 	* Due to the nature of HTML5 audio, three types of audio files will be
 	* required for cross-browser capabilities. These formats are MP3, Ogg and WAV.
+	* When sound was not muted on before pause, sound will be unmuted after unpause.
+	* When sound is muted Crafty.pause() does not have any effect on sound.
 	*/
 	audio: {
 		_elems: {},
@@ -6126,6 +6631,7 @@ Crafty.c("particles", {
 				sounds[i].addEventListener('ended', function () {
 					if (repeat == -1 || j <= repeat) {
 						this.currentTime = 0;
+            this.play();
 						j++;
 					}
 				}, false);
@@ -6183,10 +6689,11 @@ Crafty.c("particles", {
 		*/
 		mute: function (mute) {
 			var sounds, sound, i, l, elem;
-			this._muted = !this._muted;
 
 			if (arguments.length == 1 && typeof(mute) == "boolean")
 				this._muted = mute;
+      else
+			  this._muted = !this._muted;
 
 			//loop over every sound
 			for (sounds in this._elems) {
@@ -6210,9 +6717,21 @@ Crafty.c("particles", {
 	}
 });
 
-//stop sounds on Pause
-Crafty.bind("Pause", function () { Crafty.audio.mute() });
-Crafty.bind("Unpause", function () { Crafty.audio.mute() }); /**@
+//When there is sound stop sound on Pause Event.
+//When there was sound on Pause, enable sound on Unpause Event.
+(function() {
+		var prev_mute_state;
+		Crafty.bind("Pause", function () {
+				prev_mute_state=Crafty.audio._muted;
+				Crafty.audio.mute(true);
+			});
+		Crafty.bind("Unpause", function () {
+				if(!prev_mute_state) {
+					Crafty.audio.mute(false);
+				}
+			});
+})();
+ /**@
 * #HTML
 * @category Graphics
 * Component allow for insertion of arbitrary HTML into an entity
@@ -6889,11 +7408,11 @@ Crafty.c("Text", {
 
 		this.bind("Draw", function (e) {
 			var font = this._textFont["type"] + ' ' + this._textFont["weight"] + ' ' +
-                    this._textFont["size"] + ' ' + this._textFont["family"];
+				this._textFont["size"] + ' ' + this._textFont["family"];
 
 			if (e.type === "DOM") {
 				var el = this._element,
-                    style = el.style;
+					style = el.style;
 
 				style.color = this._textColor;
 				style.font = font;
@@ -6966,8 +7485,8 @@ Crafty.c("Text", {
     *
     * Crafty.e("2D, Canvas, Text").attr({ x: 100, y: 100 }).text('Look at me!!')
     *   .textColor('#FF0000', 0.6);
-    *
     * ~~~
+    * @see Crafty.toRGB
     */
 	textColor: function (color, strength) {
 		this._strength = strength;
@@ -7016,18 +7535,20 @@ Crafty.c("Text", {
 		this.trigger("Change");
 		return this;
 	}
-}); Crafty.extend({
+});
+ Crafty.extend({
 /**@
 	* #Crafty.assets
 	* @category Assets
 	* An object containing every asset used in the current Crafty game.
 	* The key is the URL and the value is the `Audio` or `Image` object.
-    *
+	*
 	* If loading an asset, check that it is in this object first to avoid loading twice.
 	* @example
 	* ~~~
 	* var isLoaded = !!Crafty.assets["images/sprite.png"];
 	* ~~~
+	* @see Crafty.loader
 	*/
 	assets: {},
 
@@ -7042,12 +7563,20 @@ Crafty.c("Text", {
 	* Preloader for all assets. Takes an array of URLs and
 	* adds them to the `Crafty.assets` object.
 	*
+	* Files with suffixes `jpg`, `jpeg`, `gif` and `png` (case insensitive) will be loaded.
+	*
+	* If `Crafty.support.audio` is `true`, files with the following suffixes `mp3`, `wav`, `ogg` and `mp4` (case insensitive) can be loaded.
+	*
 	* The `onProgress` function will be passed on object with information about
 	* the progress including how many assets loaded, total of all the assets to
 	* load and a percentage of the progress.
-    *
-	* `onError` will be passed with the asset that couldn't load.
+  *
+  *
+  *           { loaded: j, total: total, percent: (j / total * 100) })
 	*
+	* `onError` will be passed with the asset that couldn't load.
+  *
+	* When `onError` is not provided, the onLoad is loaded even some assests are not successfully loaded. Otherwise, onLoad will be called no matter whether there are errors or not. 
 	* @example
 	* ~~~
 	* Crafty.load(["images/sprite.png", "sounds/jump.mp3"],
@@ -7057,19 +7586,19 @@ Crafty.c("Text", {
 	*     },
 	*
 	*     function(e) {
-	*		  //progress
+	*       //progress
 	*     },
 	*
 	*     function(e) {
-	*	      //uh oh, error loading
+	*       //uh oh, error loading
 	*     }
 	* );
 	* ~~~
 	* @see Crafty.assets
 	*/
 	load: function (data, oncomplete, onprogress, onerror) {
-		var i = 0, l = data.length, current, obj, total = l, j = 0, ext;
-		for (; i < l; ++i) {
+		var i, l = data.length, current, obj, total = l, j = 0, ext;
+		for (i = 0; i < l; ++i) {
 			current = data[i];
 			ext = current.substr(current.lastIndexOf('.') + 1).toLowerCase();
 
@@ -7127,7 +7656,7 @@ Crafty.c("Text", {
 	*
 	* 	- http://cdn.crafty-modules.com
 	* 	- http://cdn.craftycomponents.com
-    *
+	*
 	*
 	* @example
 	* ~~~
@@ -7148,14 +7677,25 @@ Crafty.c("Text", {
 	*     //module is ready
 	*     Crafty.e("MoveTo, 2D, DOM");
 	* });
+	*
+	* // Loading from the latest component website
+	* Crafty.modules(
+	*     'http://cdn.craftycomponents.com'
+	*     , { MoveTo: 'release' }
+	*     , function () {
+	*     Crafty.e("2D, DOM, Color, MoveTo")
+	*       .attr({x: 0, y: 0, w: 50, h: 50})
+	*       .color("green");
+	*     });
+	* });
 	* ~~~
 	*
 	*/
 	modules: function (modulesRepository, moduleMap, oncomplete) {
 
 		if (arguments.length === 2 && typeof modulesRepository === "object") {
-			moduleMap = modulesRepository;
 			oncomplete = moduleMap;
+			moduleMap = modulesRepository;
 			modulesRepository = 'http://cdn.craftycomponents.com';
 		}
 
@@ -7279,14 +7819,15 @@ Crafty.c("Text", {
 			if (i.indexOf("http://") != -1)
 				modules.push(i)
 			else
-				modules.push(modulesRepository + '/' + i.toLowerCase() + '-' + moduleMap[i] + '.js');
+				modules.push(modulesRepository + '/' + i.toLowerCase() + '-' + moduleMap[i].toLowerCase() + '.js');
 		}
 
 		$script(modules, function () {
 			if (oncomplete) oncomplete();
 		});
 	}
-}); /**@
+});
+ /**@
 * #Crafty.math
 * @category 2D
 * Static functions.
@@ -8291,4 +8832,69 @@ Crafty.math.Matrix2D = (function () {
 
 	return Matrix2D;
 })();
+ /**@
+* #.delay
+* @comp Crafty Time
+* @sign public this.delay(Function callback, Number delay)
+* @param callback - Method to execute after given amount of milliseconds
+* @param delay - Amount of milliseconds to execute the method
+* The delay method will execute a function after a given amount of time in milliseconds.
+* 
+* It is not a wrapper for `setTimeout`.
+* 
+* If Crafty is paused, the delay is interrupted with the pause and then resume when unpaused
+*
+* If the entity is destroyed, the delay is also destroyed and will not have effect. 
+*
+* @example
+* ~~~
+* console.log("start");
+* this.delay(function() {
+     console.log("100ms later");
+* }, 100);
+* ~~~
+*/
+Crafty.c("Delay", {
+	init : function() {
+		this._delays = [];
+		this.bind("EnterFrame", function() {
+			var now = new Date().getTime();
+			for(var index in this._delays) {
+				var item = this._delays[index];
+				if(!item.triggered && item.start + item.delay + item.pause < now) {
+					item.triggered=true;
+					item.func.call(this);
+				}
+			}
+		});
+		this.bind("Pause", function() {
+			var now = new Date().getTime();
+			for(var index in this._delays) {
+				this._delays[index].pauseBuffer = now;
+			}
+		});
+		this.bind("Unpause", function() {
+			var now = new Date().getTime();
+			for(var index in this._delays) {
+				var item = this._delays[index];
+				item.pause += now-item.pauseBuffer;
+			}
+		});
+	},
+	/**@
+     * Set a new delay.
+     * @param func the callback function
+     * @param delay the delay in ms
+     */
+	delay : function(func, delay) {
+		return this._delays.push({
+			start : new Date().getTime(),
+			func : func,
+			delay : delay,
+			triggered : false,
+			pauseBuffer: 0,
+			pause: 0
+		});
+	}
+});
  })(Crafty,window,window.document);
