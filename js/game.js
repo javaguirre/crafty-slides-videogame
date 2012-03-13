@@ -6,15 +6,18 @@ window.onload = function() {
 	Crafty.canvas.init();
 	
 	//turn the sprite map into usable components
-	Crafty.sprite(16, "images/sprite.png", {
-		grass1: [0,0],
-		grass2: [1,0],
-		grass3: [2,0],
-		grass4: [3,0],
-		flower: [0,1],
-		bush1: [0,2],
-		bush2: [1,2],
-		player: [0,3]
+	Crafty.sprite(16, "images/bananabomber-sprites.png", {
+	    grass1: [0, 0],
+	    grass2: [1, 0],
+	    grass3: [2, 0],
+	    grass4: [3, 0],
+	    flower: [0, 1],
+	    bush1: [0, 2],
+	    bush2: [1, 2],
+	    player: [0, 3],
+	    enemy: [0, 3],
+	    banana: [4, 0],
+	    empty: [4, 0]
 	});
 	
 	//method to randomy generate the map
@@ -61,7 +64,7 @@ window.onload = function() {
 	//the loading screen that will display while our assets load
 	Crafty.scene("loading", function() {
 		//load takes an array of assets and a callback when complete
-		Crafty.load(["images/sprite.png"], function () {
+		Crafty.load(["images/bananabomber-sprites.png", "sounds/golpe.mp3", "sounds/salto.mp3", "sounds/tortuga.mp3"], function () {
 			Crafty.scene("main"); //when everything is loaded, run the main scene
 		});
 		
@@ -77,6 +80,11 @@ window.onload = function() {
 	
 	Crafty.scene("main", function() {
 		generateWorld();
+		
+		//load audio data
+		Crafty.audio.add("golpe", "sounds/golpe.mp3");
+		Crafty.audio.add("salto", "sounds/salto.mp3");
+		Crafty.audio.add("tortuga", "sounds/tortuga.mp3");
 		
 		Crafty.c('Hero', {
 			init: function() {
@@ -113,7 +121,12 @@ window.onload = function() {
 					.bind('Moved', function(from) {
 						if(this.hit('solid')){
 							this.attr({x: from.x, y:from.y});
+							Crafty.audio.play("tortuga");
 						}
+					})
+					
+					.bind('Click', function(){
+						Crafty.audio.play("salto");
 					});
 				return this;
 			}

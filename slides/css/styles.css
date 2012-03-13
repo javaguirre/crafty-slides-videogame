@@ -85,9 +85,9 @@ body {
   -moz-transition: -moz-transform .3s ease-out;
   -webkit-transition: -webkit-transform .3s ease-out;
   
-  background: url('../images/logo_gul.png') 96% 96% no-repeat,
+  background: url('../images/logo_gul.png') 96% 2% no-repeat,
   			  -webkit-gradient(linear, left top, left bottom, from(#7797a6), to(#5e727c));
-  background: url('../images/logo_gul.png') 96% 96% no-repeat,
+  background: url('../images/logo_gul.png') 96% 2% no-repeat,
   			  -moz-linear-gradient(top, #7797a6, #5e727c);
 
 }
@@ -290,10 +290,10 @@ b {
 }
 
 a {
-  color: rgb(0, 102, 204);
+  color: black;
 }
 a:visited {
-  color: rgba(0, 102, 204, .75);
+  color: black;
 }
 a:hover {
   color: black;
